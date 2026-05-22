@@ -1,0 +1,40 @@
+include(Catch)
+
+# Provide a simple smoke test to make sure that the CLI works and can display a --help message
+add_test(NAME cli.has_help COMMAND ${PROJECT_NAME} --help)
+
+# Provide a test to verify that the version being reported from the application
+# matches the version given to CMake. This will be important once you package
+# your program. Real world shows that this is the kind of simple mistake that is easy
+# to make, but also easy to test for.
+add_test(NAME cli.version_matches COMMAND ${PROJECT_NAME} --version)
+set_tests_properties(cli.version_matches PROPERTIES PASS_REGULAR_EXPRESSION "${PROJECT_VERSION}")
+
+add_executable(tests
+    test_main.cpp
+)
+
+target_link_libraries(
+  tests
+  PRIVATE vulkan_rt::vulkan_rt_warnings
+          vulkan_rt::vulkan_rt_options
+          Catch2::Catch2WithMain
+          spdlog::spdlog)
+
+vulkan_rt_configure_linker(tests)
+
+if(WIN32 AND BUILD_SHARED_LIBS)
+  add_custom_command(
+    TARGET tests
+    PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:tests> $<TARGET_FILE_DIR:tests>
+    COMMAND_EXPAND_LISTS)
+endif()
+
+target_include_directories(tests PRIVATE
+    "${CMAKE_SOURCE_DIR}/include"
+    "${CMAKE_BINARY_DIR}/configured_files/include"
+    "${CMAKE_SOURCE_DIR}/src"
+)
+
+catch_discover_tests(tests)
