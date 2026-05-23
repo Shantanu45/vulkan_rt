@@ -1,21 +1,31 @@
-#include <CLI/CLI.hpp>
+#include "app/AppConfig.hpp"
+#include "app/Application.hpp"
+
 #include <fmt/format.h>
 #include <internal_use_only/config.hpp>
 #include <spdlog/spdlog.h>
+#include <utility>
 
 int main(int argc, char **argv)
 {
-  CLI::App app{fmt::format("{} command line application", vulkan_rt::cmake::project_name)};
-  app.set_version_flag("--version", std::string{vulkan_rt::cmake::project_version});
-
-  bool verbose = false;
-  app.add_flag("-v,--verbose", verbose, "Enable verbose logging");
-
-  CLI11_PARSE(app, argc, argv);
-
-  if(verbose) { spdlog::set_level(spdlog::level::debug); }
+  auto config = vulkan_rt::app::parse_app_config(argc, argv);
+  if(config.verbose) { spdlog::set_level(spdlog::level::debug); }
 
   spdlog::debug("Git SHA: {}", vulkan_rt::cmake::git_sha);
-  fmt::println("Hello from {} {}", vulkan_rt::cmake::project_name, vulkan_rt::cmake::project_version);
-  return 0;
+  if(config.dry_run_config)
+  {
+    fmt::println(
+      "{} {} config: {}x{}, validation={}, gpu={}, scene={}",
+      vulkan_rt::cmake::project_name,
+      vulkan_rt::cmake::project_version,
+      config.width,
+      config.height,
+      config.validation,
+      config.gpu_index,
+      config.scene);
+    return 0;
+  }
+
+  vulkan_rt::app::Application application{std::move(config)};
+  return application.run();
 }

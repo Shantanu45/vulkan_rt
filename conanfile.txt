@@ -3,6 +3,11 @@ fmt/12.1.0
 spdlog/1.17.0
 catch2/3.12.0
 cli11/2.6.2
+glm/1.0.1
+sdl/3.4.0
+xxhash/0.8.3
+shaderc/2025.3
+libassert/2.2.1
 
 [generators]
 CMakeDeps

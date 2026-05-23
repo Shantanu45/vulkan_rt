@@ -1,0 +1,106 @@
+# Vulkan Ray Tracing Engine V1 Plan
+
+## Summary
+
+Build a Windows-first desktop Vulkan ray tracing engine milestone from the current
+CMake template. The first visible result is a maintainable real-time path tracing
+viewport using SDL3, Vulkan ray tracing extensions, GLSL ray tracing shaders
+compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
+
+## Key Changes
+
+- [x] Replace the template executable with an initial application shell.
+- [x] Add an app layer for SDL3 window creation, main loop, input, UI-layer
+      boundary, and CLI options.
+- [ ] Add the real ImGui overlay once the Vulkan renderer/backend exists.
+- [ ] Add an engine layer for renderer orchestration, frame lifecycle, and scene
+      ownership.
+- [ ] Add a render/vulkan layer for Vulkan instance/device/swapchain, command
+      pools, synchronization, descriptors, pipelines, acceleration structures,
+      and shader binding table.
+- [ ] Use the Vulkan C API with thin local RAII wrappers.
+- [ ] Implement non-copyable handle wrappers with explicit move semantics.
+- [ ] Add central Vulkan types: Device, Context, Swapchain, Buffer, Image,
+      ShaderModule, RayTracingPipeline, and AccelerationStructure.
+- [ ] Avoid broad Vulkan abstraction layers that hide core API concepts.
+- [x] Add SDL3 for windowing and input.
+- [ ] Add Vulkan surface integration when renderer setup begins.
+- [ ] Add Vulkan SDK detection with find_package(Vulkan REQUIRED).
+- [ ] Add VulkanMemoryAllocator for GPU memory management.
+- [ ] Add ImGui with SDL3 and Vulkan backends for the minimal overlay.
+- [ ] Keep fmt, spdlog, CLI11, and Catch2.
+- [ ] Add GLSL ray tracing shaders:
+      - shaders/raygen.rgen
+      - shaders/miss.rmiss
+      - shaders/closesthit.rchit
+- [ ] Add a CMake custom target that compiles GLSL shaders to SPIR-V with glslc.
+- [ ] Emit a clear configure-time error if Vulkan SDK or glslc is missing.
+- [ ] Add a procedural Cornell-box-style test scene with triangle mesh geometry.
+- [ ] Add a simple material buffer with diffuse albedo, emissive color, and a
+      roughness placeholder.
+- [ ] Implement progressive accumulation.
+- [ ] Reset accumulation when the camera moves or scene/debug settings change.
+- [ ] Add a minimal ImGui overlay showing FPS/frame time.
+- [ ] Show accumulated sample count in the overlay.
+- [ ] Add camera speed and FOV controls.
+- [ ] Add validation/debug toggles where available.
+- [ ] Add a reset accumulation button.
+
+## Public Interfaces
+
+- [x] Preserve the executable CLI entrypoint.
+- [x] Add CLI option: --width <int>.
+- [x] Add CLI option: --height <int>.
+- [x] Add CLI option: --validation.
+- [x] Add CLI option: --gpu <index>.
+- [x] Add CLI option: --scene procedural.
+- [x] Keep --version.
+- [x] Keep --verbose.
+- [ ] Add EngineConfig with window size, validation flag, requested GPU index,
+      and scene mode.
+- [ ] Add Engine with run(), owning the app loop and renderer.
+- [ ] Add Renderer with begin_frame(), render(scene, camera), end_frame(), and
+      resize().
+- [ ] Add Scene for CPU-side geometry, material, and light data for V1
+      procedural content.
+- [ ] Add Camera with position, orientation, FOV, and input-driven update.
+- [ ] Report fatal setup failures with clear messages.
+- [ ] Detect and report missing ray tracing extension support.
+- [ ] Detect and report missing acceleration structure support.
+- [ ] Detect and report missing shader compiler output.
+- [ ] Detect and report swapchain creation failure.
+
+## Test Plan
+
+- [ ] Keep Catch2 tests.
+- [ ] Replace template sample tests with engine-focused tests.
+- [ ] Test CLI config parsing defaults and overrides.
+- [ ] Test RAII wrapper move/destruction behavior with mock or null-safe handles
+      where practical.
+- [ ] Test that the procedural scene builder produces valid geometry and
+      material ranges.
+- [ ] Test that shader manifest/custom command paths are generated as expected.
+- [ ] Add CTest smoke test for vulkan_rt --help.
+- [ ] Add CTest smoke test for vulkan_rt --version.
+- [x] Add an optional CI-safe --dry-run-config path that validates config without
+      creating a Vulkan device.
+- [ ] Manually verify that the app opens an SDL3 window on Windows.
+- [ ] Manually verify that Vulkan validation can be enabled.
+- [ ] Manually verify that the procedural scene renders through the ray tracing
+      pipeline.
+- [ ] Manually verify that camera movement resets accumulation.
+- [ ] Manually verify that resizing recreates the swapchain without crashing.
+- [ ] Manually verify that the ImGui overlay remains usable and does not corrupt
+      rendering.
+
+## Assumptions
+
+- [ ] Target platform for V1 is Windows with MSVC or clang-cl using the existing
+      presets.
+- [ ] GPU must support VK_KHR_acceleration_structure,
+      VK_KHR_ray_tracing_pipeline, VK_KHR_deferred_host_operations, and required
+      buffer device address features.
+- [ ] V1 prioritizes clean architecture over asset loading, denoising, editor
+      tooling, hot reload, render graph, or glTF import.
+- [ ] Procedural scene is the only supported scene source in V1.
+- [ ] glTF can be added after the renderer foundation is stable.
