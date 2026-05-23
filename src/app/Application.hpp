@@ -33,6 +33,7 @@ public:
   Application &operator=(Application &&) = delete;
 
   int run();
+  int smoke_test();
 
 private:
   using Clock = std::chrono::steady_clock;

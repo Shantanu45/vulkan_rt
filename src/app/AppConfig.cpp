@@ -22,6 +22,7 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_option("--gpu", config.gpu_index, "Requested GPU index; -1 selects the default device");
   cli.add_option("--scene", config.scene, "Scene source to load")->check(CLI::IsMember({"procedural"}));
   cli.add_flag("--dry-run-config", config.dry_run_config, "Validate CLI configuration without opening a window");
+  cli.add_flag("--app-smoke", config.app_smoke, "Create the SDL application shell, tick once, and exit");
 
   try
   {

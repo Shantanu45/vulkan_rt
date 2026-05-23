@@ -13,6 +13,7 @@ struct AppConfig
   std::string scene = "procedural";
   bool verbose = false;
   bool dry_run_config = false;
+  bool app_smoke = false;
 };
 
 AppConfig parse_app_config(int argc, char **argv);

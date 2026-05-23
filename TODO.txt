@@ -56,6 +56,7 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Add CLI option: --scene procedural.
 - [x] Keep --version.
 - [x] Keep --verbose.
+- [x] Add CLI option: --app-smoke.
 - [ ] Add EngineConfig with window size, validation flag, requested GPU index,
       and scene mode.
 - [ ] Add Engine with run(), owning the app loop and renderer.
@@ -84,6 +85,8 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [ ] Add CTest smoke test for vulkan_rt --version.
 - [x] Add an optional CI-safe --dry-run-config path that validates config without
       creating a Vulkan device.
+- [x] Add an app smoke path that creates the SDL application shell, ticks once,
+      and exits without entering the full main loop.
 - [ ] Manually verify that the app opens an SDL3 window on Windows.
 - [ ] Manually verify that Vulkan validation can be enabled.
 - [ ] Manually verify that the procedural scene renders through the ray tracing

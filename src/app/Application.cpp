@@ -61,6 +61,23 @@ int Application::run()
   return 0;
 }
 
+int Application::smoke_test()
+{
+  const auto now = Clock::now();
+  const std::chrono::duration<double> delta = now - previous_frame_time_;
+  previous_frame_time_ = now;
+
+  window_.poll_events(input_);
+
+  ui_.begin_frame();
+  ui_.draw(build_ui_stats(delta.count()));
+  ui_.end_frame();
+
+  const auto extent = window_.framebuffer_extent();
+  spdlog::info("Application smoke test passed: framebuffer {}x{}", extent.width, extent.height);
+  return 0;
+}
+
 UiStats Application::build_ui_stats(double frame_time_seconds) const
 {
   UiStats stats;
