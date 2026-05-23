@@ -1,4 +1,4 @@
-add_executable(${PROJECT_NAME}
+set(app
   main.cpp
   app/AppConfig.cpp
   app/AppConfig.hpp
@@ -12,6 +12,23 @@ add_executable(${PROJECT_NAME}
   app/Window.hpp
 )
 
+source_group("app" FILES ${app})
+
+set(vulkan
+    render/vulkan/VulkanCheck.hpp
+    render/vulkan/VulkanCheck.cpp
+)
+
+source_group("render/vulkan" FILES ${vulkan})
+
+
+source_group("app" FILES ${app})
+
+add_executable(${PROJECT_NAME}
+${app}
+${vulkan}
+)
+
 if(TARGET SDL3::SDL3)
   set(vulkan_rt_sdl_target SDL3::SDL3)
 elseif(TARGET SDL3::SDL3-shared)
@@ -22,6 +39,9 @@ else()
   message(FATAL_ERROR "SDL3 package was found, but no supported SDL3 CMake target is available.")
 endif()
 
+find_package(volk REQUIRED)
+find_package(VulkanHeaders REQUIRED)
+
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE vulkan_rt::vulkan_rt_options
@@ -29,6 +49,8 @@ target_link_libraries(
           CLI11::CLI11
           fmt::fmt
           spdlog::spdlog
+          vulkan-headers::vulkan-headers
+          volk::volk
           ${vulkan_rt_sdl_target})
 
 

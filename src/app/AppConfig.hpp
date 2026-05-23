@@ -14,6 +14,7 @@ struct AppConfig
   bool verbose = false;
   bool dry_run_config = false;
   bool app_smoke = false;
+  bool check_vulkan = false;
 };
 
 AppConfig parse_app_config(int argc, char **argv);

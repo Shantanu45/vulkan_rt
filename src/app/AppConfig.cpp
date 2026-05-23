@@ -23,6 +23,7 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_option("--scene", config.scene, "Scene source to load")->check(CLI::IsMember({"procedural"}));
   cli.add_flag("--dry-run-config", config.dry_run_config, "Validate CLI configuration without opening a window");
   cli.add_flag("--app-smoke", config.app_smoke, "Create the SDL application shell, tick once, and exit");
+  cli.add_flag("--check-vulkan", config.check_vulkan, "Reports if Vulkan loader is preset, instance can be created, validation availability and physical devices.");
 
   try
   {

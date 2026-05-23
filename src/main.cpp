@@ -1,5 +1,6 @@
 #include "app/AppConfig.hpp"
 #include "app/Application.hpp"
+#include "render/vulkan/VulkanCheck.hpp"
 
 #include <fmt/format.h>
 #include <internal_use_only/config.hpp>
@@ -25,6 +26,18 @@ int main(int argc, char **argv)
       config.scene,
       config.app_smoke);
     return 0;
+  }
+
+  if (config.check_vulkan)
+  { 
+      auto result = vulkan_rt::render::vulkan::check_vulkan(true);
+      fmt::println("loader: {}, instance creation: {}, validation: {}, phsical device count: {} \n error?:{}",
+      result.loader_present,
+      result.instance_created,
+      result.validation_layer_available,
+      result.physical_device_count,
+      result.error);
+      return 0;
   }
 
   const bool app_smoke = config.app_smoke;

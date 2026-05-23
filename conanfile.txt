@@ -8,6 +8,8 @@ sdl/3.4.0
 xxhash/0.8.3
 shaderc/2025.3
 libassert/2.2.1
+volk/1.4.350.0
+vulkan-headers/1.4.350.0
 
 [generators]
 CMakeDeps
