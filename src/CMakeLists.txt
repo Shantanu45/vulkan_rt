@@ -61,11 +61,19 @@ set(vulkan
 
 source_group("render/vulkan" FILES ${vulkan})
 
+set(scene
+    scene/Scene.cpp
+    scene/Scene.hpp
+)
+
+source_group("scene" FILES ${scene})
+
 add_executable(${PROJECT_NAME}
 ${app}
 ${engine}
 ${render}
 ${vulkan}
+${scene}
 ${util}
 )
 

@@ -35,7 +35,7 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
       - shaders/closesthit.rchit
 - [ ] Add a CMake custom target that compiles GLSL shaders to SPIR-V with glslc.
 - [ ] Emit a clear configure-time error if Vulkan SDK or glslc is missing.
-- [ ] Add a procedural Cornell-box-style test scene with triangle mesh geometry.
+- [x] Add a procedural Cornell-box-style test scene with triangle mesh geometry.
 - [ ] Add a simple material buffer with diffuse albedo, emissive color, and a
       roughness placeholder.
 - [ ] Implement progressive accumulation.
@@ -62,7 +62,7 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Add Renderer interface with render(), resize(), wait_idle(), and a
       NullRenderer placeholder.
 - [ ] Expand Renderer to accept scene and camera data once those systems exist.
-- [ ] Add Scene for CPU-side geometry, material, and light data for V1
+- [x] Add Scene for CPU-side geometry, material, and light data for V1
       procedural content.
 - [ ] Add Camera with position, orientation, FOV, and input-driven update.
 - [ ] Report fatal setup failures with clear messages.
@@ -78,7 +78,7 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [ ] Test CLI config parsing defaults and overrides.
 - [ ] Test RAII wrapper move/destruction behavior with mock or null-safe handles
       where practical.
-- [ ] Test that the procedural scene builder produces valid geometry and
+- [x] Test that the procedural scene builder produces valid geometry and
       material ranges.
 - [ ] Test that shader manifest/custom command paths are generated as expected.
 - [ ] Add CTest smoke test for vulkan_rt --help.

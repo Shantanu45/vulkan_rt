@@ -40,3 +40,12 @@ TEST_CASE("engine render increments frame index")
 
   CHECK(engine.frame_stats().frame_index == 2);
 }
+
+TEST_CASE("engine owns the configured procedural scene")
+{
+  vulkan_rt::engine::Engine engine{{}};
+
+  CHECK_FALSE(engine.scene().empty());
+  CHECK(engine.scene().materials().size() == 4);
+  CHECK(engine.scene().triangles().size() == 12);
+}

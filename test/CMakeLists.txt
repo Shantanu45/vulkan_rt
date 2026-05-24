@@ -23,6 +23,7 @@ set_tests_properties(cli.dry_run_config PROPERTIES PASS_REGULAR_EXPRESSION "1600
 add_executable(tests
     engine_tests.cpp
     render_tests.cpp
+    scene_tests.cpp
     test_main.cpp
 )
 
@@ -38,6 +39,7 @@ target_sources(tests PRIVATE
     "${CMAKE_SOURCE_DIR}/src/engine/Engine.cpp"
     "${CMAKE_SOURCE_DIR}/src/engine/EngineConfig.cpp"
     "${CMAKE_SOURCE_DIR}/src/render/NullRenderer.cpp"
+    "${CMAKE_SOURCE_DIR}/src/scene/Scene.cpp"
     "${CMAKE_SOURCE_DIR}/src/util/logger.cpp"
 )
 

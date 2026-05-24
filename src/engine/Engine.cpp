@@ -1,6 +1,7 @@
 #include "engine/Engine.hpp"
 
 #include "render/NullRenderer.hpp"
+#include "scene/Scene.hpp"
 #include "util/logger.h"
 
 #include <memory>
@@ -10,10 +11,12 @@ namespace vulkan_rt::engine
 {
 Engine::Engine(EngineConfig config)
   : config_(std::move(config))
+  , scene_(scene::make_procedural_scene())
   , renderer_(std::make_unique<render::NullRenderer>())
 {
   LOGD(
     "Engine initialized: validation={}, gpu={}, scene={}", config_.validation, config_.gpu_index, config_.scene);
+  LOGD("Scene initialized: materials={}, triangles={}", scene_.materials().size(), scene_.triangles().size());
 }
 
 Engine::~Engine() = default;
@@ -47,5 +50,10 @@ const FrameStats &Engine::frame_stats() const
 const EngineConfig &Engine::config() const
 {
   return config_;
+}
+
+const scene::Scene &Engine::scene() const
+{
+  return scene_;
 }
 }
