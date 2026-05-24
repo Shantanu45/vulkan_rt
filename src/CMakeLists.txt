@@ -32,6 +32,8 @@ set(app
   app/SdlSurfaceProvider.hpp
   app/UiLayer.cpp
   app/UiLayer.hpp
+  app/VulkanContextSmoke.cpp
+  app/VulkanContextSmoke.hpp
   app/Window.cpp
   app/Window.hpp
 )

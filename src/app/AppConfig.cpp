@@ -25,6 +25,9 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_flag("--check-vulkan",
     config.check_vulkan,
     "Reports if Vulkan loader is preset, instance can be created, validation availability and physical devices.");
+  cli.add_flag("--vulkan-context-smoke",
+    config.vulkan_context_smoke,
+    "Create an SDL Vulkan window and verify VulkanContext instance/surface creation.");
 
   try {
     cli.parse(argc, argv);

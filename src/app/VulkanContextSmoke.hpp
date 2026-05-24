@@ -1,0 +1,8 @@
+#pragma once
+
+#include "app/AppConfig.hpp"
+
+namespace vulkan_rt::app
+{
+int vulkan_context_smoke_test(const AppConfig &config);
+}

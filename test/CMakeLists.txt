@@ -20,6 +20,14 @@ add_test(
           --gpu 0)
 set_tests_properties(cli.dry_run_config PROPERTIES PASS_REGULAR_EXPRESSION "1600x900")
 
+option(VULKAN_RT_ENABLE_VULKAN_CONTEXT_TESTS "Enable Vulkan context integration tests" OFF)
+
+if(VULKAN_RT_ENABLE_VULKAN_CONTEXT_TESTS)
+  add_test(
+    NAME vulkan.context_smoke
+    COMMAND ${PROJECT_NAME} --vulkan-context-smoke --width 64 --height 64)
+endif()
+
 add_executable(tests
     camera_tests.cpp
     engine_tests.cpp

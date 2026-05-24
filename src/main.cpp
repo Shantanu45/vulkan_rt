@@ -1,5 +1,6 @@
 #include "app/AppConfig.hpp"
 #include "app/Application.hpp"
+#include "app/VulkanContextSmoke.hpp"
 #include "render/vulkan/VulkanCheck.hpp"
 
 #include "util/logger.h"
@@ -41,6 +42,10 @@ int main(int argc, char **argv)
       return 1;
     }
     return 0;
+  }
+
+  if (config.vulkan_context_smoke) {
+    return vulkan_rt::app::vulkan_context_smoke_test(config);
   }
 
   const bool app_smoke = config.app_smoke;

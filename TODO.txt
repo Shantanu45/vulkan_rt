@@ -92,6 +92,8 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
       and exits without entering the full main loop.
 - [ ] Manually verify that the app opens an SDL3 window on Windows.
 - [ ] Manually verify that Vulkan validation can be enabled.
+- [x] Add an opt-in VulkanContext smoke path that creates an SDL Vulkan surface
+      and Vulkan instance.
 - [ ] Manually verify that the procedural scene renders through the ray tracing
       pipeline.
 - [ ] Manually verify that camera movement resets accumulation.

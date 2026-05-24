@@ -9,10 +9,19 @@ VulkanRenderer::VulkanRenderer(const VulkanRendererConfig &config, const Surface
 }
 
 void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scene &scene, const scene::Camera &camera)
-{ throw std::logic_error("The method or operation is not implemented."); }
+{
+  static_cast<void>(frame_info);
+  static_cast<void>(scene);
+  static_cast<void>(camera);
+  throw std::logic_error("The method or operation is not implemented.");
+}
 
 void VulkanRenderer::resize(int width, int height)
-{ throw std::logic_error("The method or operation is not implemented."); }
+{
+  static_cast<void>(width);
+  static_cast<void>(height);
+  throw std::logic_error("The method or operation is not implemented.");
+}
 
 void VulkanRenderer::wait_idle() {}
 
