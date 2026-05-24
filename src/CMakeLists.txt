@@ -60,7 +60,7 @@ else()
 endif()
 
 find_package(volk REQUIRED)
-find_package(VulkanHeaders REQUIRED)
+find_package(Vulkan REQUIRED)
 find_package(libassert REQUIRED)
 find_package(sdl3 REQUIRED)
 
@@ -71,7 +71,7 @@ target_link_libraries(
           CLI11::CLI11
           fmt::fmt
           spdlog::spdlog
-          vulkan-headers::vulkan-headers
+          Vulkan::Headers
           volk::volk
           libassert::assert
           SDL3::SDL3

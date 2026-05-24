@@ -25,7 +25,7 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [ ] Avoid broad Vulkan abstraction layers that hide core API concepts.
 - [x] Add SDL3 for windowing and input.
 - [ ] Add Vulkan surface integration when renderer setup begins.
-- [ ] Add Vulkan SDK detection with find_package(Vulkan REQUIRED).
+- [x] Add Vulkan SDK detection with find_package(Vulkan REQUIRED).
 - [ ] Add VulkanMemoryAllocator for GPU memory management.
 - [ ] Add ImGui with SDL3 and Vulkan backends for the minimal overlay.
 - [ ] Keep fmt, spdlog, CLI11, and Catch2.

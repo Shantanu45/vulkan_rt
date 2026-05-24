@@ -5,6 +5,7 @@
 #include <fmt/format.h>
 #include <internal_use_only/config.hpp>
 #include <spdlog/spdlog.h>
+#include <memory>
 #include <utility>
 #include "util/logger.h"
 
@@ -33,12 +34,17 @@ int main(int argc, char **argv)
 
   if (config.check_vulkan)
   { 
-      auto result = vulkan_rt::render::vulkan::check_vulkan(true);
-      LOGI("\n loader: {},\n instance creation: {},\n validation: {},\n phsical device count: {}\n",
+      auto result = vulkan_rt::render::vulkan::check_vulkan(config.validation);
+      LOGI("\n loader: {},\n instance creation: {},\n validation: {},\n physical device count: {}\n",
         result.loader_present,
         result.instance_created,
         result.validation_layer_available,
         result.physical_device_count);
+      if(!result.error.empty())
+      {
+        LOGE("Vulkan check failed: {}", result.error);
+        return 1;
+      }
       return 0;
   }
 
