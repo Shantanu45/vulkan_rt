@@ -29,12 +29,12 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [ ] Add VulkanMemoryAllocator for GPU memory management.
 - [ ] Add ImGui with SDL3 and Vulkan backends for the minimal overlay.
 - [ ] Keep fmt, spdlog, CLI11, and Catch2.
-- [ ] Add GLSL ray tracing shaders:
+- [x] Add GLSL ray tracing shaders:
       - shaders/raygen.rgen
       - shaders/miss.rmiss
       - shaders/closesthit.rchit
-- [ ] Add a CMake custom target that compiles GLSL shaders to SPIR-V with glslc.
-- [ ] Emit a clear configure-time error if Vulkan SDK or glslc is missing.
+- [x] Add a CMake custom target that compiles GLSL shaders to SPIR-V with glslc.
+- [x] Emit a clear configure-time error if Vulkan SDK or glslc is missing.
 - [x] Add a procedural Cornell-box-style test scene with triangle mesh geometry.
 - [ ] Add a simple material buffer with diffuse albedo, emissive color, and a
       roughness placeholder.

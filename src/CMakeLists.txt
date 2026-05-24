@@ -86,6 +86,49 @@ set(scene
 
 source_group("scene" FILES ${scene})
 
+find_package(Vulkan REQUIRED COMPONENTS glslc)
+
+set(vulkan_rt_shader_sources
+    "${CMAKE_SOURCE_DIR}/shaders/raygen.rgen"
+    "${CMAKE_SOURCE_DIR}/shaders/miss.rmiss"
+    "${CMAKE_SOURCE_DIR}/shaders/closesthit.rchit"
+)
+
+source_group("shaders" FILES ${vulkan_rt_shader_sources})
+
+set(vulkan_rt_compiled_shaders)
+
+function(vulkan_rt_compile_shader shader_source shader_stage)
+  get_filename_component(shader_filename "${shader_source}" NAME)
+  set(shader_output "${CMAKE_CURRENT_BINARY_DIR}/shaders/${shader_filename}.spv")
+
+  add_custom_command(
+    OUTPUT "${shader_output}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/shaders"
+    COMMAND Vulkan::glslc
+            --target-env=vulkan1.3
+            "-fshader-stage=${shader_stage}"
+            "${shader_source}"
+            -o "${shader_output}"
+    DEPENDS "${shader_source}"
+    COMMENT "Compiling ${shader_filename} to SPIR-V"
+    VERBATIM)
+
+  set(vulkan_rt_compiled_shaders
+      ${vulkan_rt_compiled_shaders}
+      "${shader_output}"
+      PARENT_SCOPE)
+endfunction()
+
+vulkan_rt_compile_shader("${CMAKE_SOURCE_DIR}/shaders/raygen.rgen" rgen)
+vulkan_rt_compile_shader("${CMAKE_SOURCE_DIR}/shaders/miss.rmiss" rmiss)
+vulkan_rt_compile_shader("${CMAKE_SOURCE_DIR}/shaders/closesthit.rchit" rchit)
+
+add_custom_target(vulkan_rt_shaders
+  DEPENDS ${vulkan_rt_compiled_shaders}
+  SOURCES ${vulkan_rt_shader_sources})
+set_target_properties(vulkan_rt_shaders PROPERTIES FOLDER "assets")
+
 add_executable(${PROJECT_NAME}
 ${app}
 ${engine}
@@ -93,7 +136,10 @@ ${render}
 ${vulkan}
 ${scene}
 ${util}
+${vulkan_rt_shader_sources}
 )
+
+add_dependencies(${PROJECT_NAME} vulkan_rt_shaders)
 
 if(TARGET SDL3::SDL3)
   set(vulkan_rt_sdl_target SDL3::SDL3)
@@ -106,7 +152,6 @@ else()
 endif()
 
 find_package(volk REQUIRED)
-find_package(Vulkan REQUIRED)
 find_package(libassert REQUIRED)
 find_package(sdl3 REQUIRED)
 
