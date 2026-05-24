@@ -37,6 +37,9 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_flag("--vulkan-frame-smoke",
     config.vulkan_frame_smoke,
     "Create Vulkan frame command buffers and synchronization objects, then report counts.");
+  cli.add_flag("--vulkan-shader-smoke",
+    config.vulkan_shader_smoke,
+    "Create Vulkan shader modules from the compiled ray tracing SPIR-V files, then report handles.");
   cli.add_flag("--vulkan-clear-smoke",
     config.vulkan_clear_smoke,
     "Create VulkanRenderer, clear/present a few frames, and exit.");

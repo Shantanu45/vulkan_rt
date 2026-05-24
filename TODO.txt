@@ -21,7 +21,8 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [ ] Use the Vulkan C API with thin local RAII wrappers.
 - [ ] Implement non-copyable handle wrappers with explicit move semantics.
 - [ ] Add central Vulkan types: Device, Context, Swapchain, Buffer, Image,
-      ShaderModule, RayTracingPipeline, and AccelerationStructure.
+      RayTracingPipeline, and AccelerationStructure.
+- [x] Add ShaderModule Vulkan type.
 - [ ] Avoid broad Vulkan abstraction layers that hide core API concepts.
 - [x] Add SDL3 for windowing and input.
 - [ ] Add Vulkan surface integration when renderer setup begins.

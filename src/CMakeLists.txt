@@ -64,6 +64,8 @@ set(vulkan
     render/vulkan/VulkanRendererConfig.hpp
     render/vulkan/VulkanRenderer.hpp
     render/vulkan/VulkanRenderer.cpp
+    render/vulkan/ShaderModule.hpp
+    render/vulkan/ShaderModule.cpp
     render/vulkan/VulkanContext.hpp
     render/vulkan/VulkanContext.cpp
     render/vulkan/VulkanDevice.hpp

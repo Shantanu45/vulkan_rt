@@ -60,6 +60,10 @@ int main(int argc, char **argv)
     return vulkan_rt::app::vulkan_frame_smoke_test(config);
   }
 
+  if (config.vulkan_shader_smoke) {
+    return vulkan_rt::app::vulkan_shader_smoke_test(config);
+  }
+
   if (config.vulkan_clear_smoke) {
     return vulkan_rt::app::vulkan_clear_smoke_test(config);
   }

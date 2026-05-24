@@ -49,6 +49,7 @@ string(
             0
             8
             GIT_SHORT_SHA)
+set(VULKAN_RT_SHADER_DIR "${CMAKE_BINARY_DIR}/src/shaders")
 
 target_compile_features(vulkan_rt_options INTERFACE cxx_std_${CMAKE_CXX_STANDARD})
 
