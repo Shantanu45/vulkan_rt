@@ -56,12 +56,11 @@ constexpr const char *_error_handler_type_string(ErrorHandlerType p_type) {
 		default:
 			return "NONE";
 	}
-	return "UNKNOWN ERROR";
 }
 
 // Pointer to the error handler printing function. Reassign to any function to have errors printed.
 // Parameters: userdata, function, file, line, error, explanation, type.
-typedef void (*ErrorHandlerFunc)(void *, const char *, const char *, int p_line, const char *, const char *, bool p_editor_notify, ErrorHandlerType p_type);
+typedef void (*ErrorHandlerFunc)(void *, const char *, const char *, int p_line, const char *, const char *, ErrorHandlerType p_type);
 
 struct ErrorHandlerList {
 	ErrorHandlerFunc errfunc = nullptr;
@@ -74,14 +73,14 @@ void add_error_handler(ErrorHandlerList *p_handler);
 void remove_error_handler(const ErrorHandlerList *p_handler);
 
 // Functions used by the error macros.
-_NO_INLINE_ void _err_print_error(const char *p_function, const char *p_file, int p_line, const char *p_error, bool p_editor_notify = false, ErrorHandlerType p_type = ERR_HANDLER_ERROR);
-_NO_INLINE_ void _err_print_error(const char *p_function, const char *p_file, int p_line, const std::string &p_error, bool p_editor_notify = false, ErrorHandlerType p_type = ERR_HANDLER_ERROR);
-_NO_INLINE_ void _err_print_error(const char *p_function, const char *p_file, int p_line, const char *p_error, const char *p_message, bool p_editor_notify = false, ErrorHandlerType p_type = ERR_HANDLER_ERROR);
-//_NO_INLINE_ void _err_print_error(const char *p_function, const char *p_file, int p_line, const std::string &p_error, const char *p_message, bool p_editor_notify = false, ErrorHandlerType p_type = ERR_HANDLER_ERROR);
-//_NO_INLINE_ void _err_print_error(const char *p_function, const char *p_file, int p_line, const char *p_error, const std::string &p_message, bool p_editor_notify = false, ErrorHandlerType p_type = ERR_HANDLER_ERROR);
-_NO_INLINE_ void _err_print_error(const char *p_function, const char *p_file, int p_line, const std::string &p_error, const std::string &p_message, bool p_editor_notify = false, ErrorHandlerType p_type = ERR_HANDLER_ERROR);
+_NO_INLINE_ void _err_print_error(const char *p_function, const char *p_file, int p_line, const char *p_error, ErrorHandlerType p_type = ERR_HANDLER_ERROR);
+_NO_INLINE_ void _err_print_error(const char *p_function, const char *p_file, int p_line, const std::string &p_error, ErrorHandlerType p_type = ERR_HANDLER_ERROR);
+_NO_INLINE_ void _err_print_error(const char *p_function, const char *p_file, int p_line, const char *p_error, const char *p_message, ErrorHandlerType p_type = ERR_HANDLER_ERROR);
+//_NO_INLINE_ void _err_print_error(const char *p_function, const char *p_file, int p_line, const std::string &p_error, const char *p_message, ErrorHandlerType p_type = ERR_HANDLER_ERROR);
+//_NO_INLINE_ void _err_print_error(const char *p_function, const char *p_file, int p_line, const char *p_error, const std::string &p_message, ErrorHandlerType p_type = ERR_HANDLER_ERROR);
+_NO_INLINE_ void _err_print_error(const char *p_function, const char *p_file, int p_line, const std::string &p_error, const std::string &p_message, ErrorHandlerType p_type = ERR_HANDLER_ERROR);
 void _err_print_error_asap(const std::string &p_error, ErrorHandlerType p_type = ERR_HANDLER_ERROR);
-_NO_INLINE_ void _err_print_index_error(const char *p_function, const char *p_file, int p_line, int64_t p_index, int64_t p_size, const char *p_index_str, const char *p_size_str, const char *p_message = "", bool p_editor_notify = false, bool fatal = false);
+_NO_INLINE_ void _err_print_index_error(const char *p_function, const char *p_file, int p_line, int64_t p_index, int64_t p_size, const char *p_index_str, const char *p_size_str, const char *p_message = "", bool fatal = false);
 //_NO_INLINE_ void _err_print_index_error(const char *p_function, const char *p_file, int p_line, int64_t p_index, int64_t p_size, const char *p_index_str, const char *p_size_str, const std::string &p_message, bool p_editor_notify = false, bool fatal = false);
 _NO_INLINE_ void _err_flush_stdout();
 

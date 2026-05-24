@@ -1,3 +1,25 @@
+set(util
+    util/error_list.cpp
+    util/error_list.h
+    util/error_macros.cpp
+    util/error_macros.h
+    util/hash.h
+    util/hash_func.h
+    util/logger.cpp
+    util/logger.h
+    util/renderdoc_helpers.h
+    util/rid.h
+    util/rid_owner.h
+    util/string_helpers.cpp
+    util/string_helpers.h
+    util/timer.cpp
+    util/timer.h
+    util/_mutex.h
+    util/typedefs.h
+)
+
+source_group("util" FILES ${util})
+
 set(app
   main.cpp
   app/AppConfig.cpp
@@ -21,12 +43,10 @@ set(vulkan
 
 source_group("render/vulkan" FILES ${vulkan})
 
-
-source_group("app" FILES ${app})
-
 add_executable(${PROJECT_NAME}
 ${app}
 ${vulkan}
+${util}
 )
 
 if(TARGET SDL3::SDL3)
@@ -41,6 +61,8 @@ endif()
 
 find_package(volk REQUIRED)
 find_package(VulkanHeaders REQUIRED)
+find_package(libassert REQUIRED)
+find_package(sdl3 REQUIRED)
 
 target_link_libraries(
   ${PROJECT_NAME}
@@ -51,6 +73,8 @@ target_link_libraries(
           spdlog::spdlog
           vulkan-headers::vulkan-headers
           volk::volk
+          libassert::assert
+          SDL3::SDL3
           ${vulkan_rt_sdl_target})
 
 

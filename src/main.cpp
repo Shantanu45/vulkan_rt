@@ -6,9 +6,12 @@
 #include <internal_use_only/config.hpp>
 #include <spdlog/spdlog.h>
 #include <utility>
+#include "util/logger.h"
 
 int main(int argc, char **argv)
 {
+  auto logger = std::make_unique<::Util::StdSpdLogger>();
+  ::Util::set_logger_iface(logger.get());
   auto config = vulkan_rt::app::parse_app_config(argc, argv);
   if(config.verbose) { spdlog::set_level(spdlog::level::debug); }
 

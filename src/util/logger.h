@@ -8,7 +8,6 @@ namespace fs = std::filesystem;
 
 namespace Util
 {
-
 	class Logger {
 	public:
 		enum ErrorType {
@@ -50,7 +49,7 @@ namespace Util
 		static void set_flush_stdout_on_print(bool value);
 
 		virtual void logv(const char* p_format, va_list p_list, ErrorType p_type = ErrorType::NONE) = 0;
-		virtual void log_error(const char* p_function, const char* p_file, int p_line, const char* p_code, const char* p_rationale, bool p_editor_notify = false, ErrorType p_type = ERR_ERROR);
+		virtual void log_error(const char* p_function, const char* p_file, int p_line, const char* p_code, const char* p_rationale, ErrorType p_type = ERR_ERROR);
 
 		void logf(ErrorType p_type, const char* p_format, ...);
 		void logf_error(const char* p_format, ...);
@@ -113,7 +112,7 @@ namespace Util
 		explicit CompositeLogger(const std::vector<Logger*>& p_loggers);
 
 		virtual void logv(const char* p_format, va_list p_list, ErrorType p_type) override;
-		virtual void log_error(const char* p_function, const char* p_file, int p_line, const char* p_code, const char* p_rationale, bool p_editor_notify, ErrorType p_type = ERR_ERROR) override;
+		virtual void log_error(const char* p_function, const char* p_file, int p_line, const char* p_code, const char* p_rationale, ErrorType p_type = ERR_ERROR) override;
 
 		void add_logger(Logger* p_logger);
 

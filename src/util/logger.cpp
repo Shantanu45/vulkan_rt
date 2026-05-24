@@ -6,7 +6,7 @@
 
 namespace Util
 {
-	void Logger::log_error(const char* p_function, const char* p_file, int p_line, const char* p_code, const char* p_rationale, bool p_editor_notify, ErrorType p_type)
+	void Logger::log_error(const char* p_function, const char* p_file, int p_line, const char* p_code, const char* p_rationale, ErrorType p_type /*= ERR_ERROR*/)
 	{
 		if (!should_log(p_type)) {
 			return;
@@ -80,7 +80,7 @@ namespace Util
 		va_end(argp);
 	}
 
-	bool Logger::should_log(ErrorType p_type) {
+	bool Logger::should_log([[maybe_unused]] ErrorType p_type) {
 		// SHAN: TODO: add global controls 
 		return (true /*|| CoreGlobals::print_error_enabled) && (p_err || CoreGlobals::print_line_enabled*/);
 	}
@@ -242,13 +242,13 @@ namespace Util
 		}
 	}
 
-	void CompositeLogger::log_error(const char* p_function, const char* p_file, int p_line, const char* p_code, const char* p_rationale, bool p_editor_notify, ErrorType p_type) {
+	void CompositeLogger::log_error(const char* p_function, const char* p_file, int p_line, const char* p_code, const char* p_rationale, ErrorType p_type /*= ERR_ERROR*/) {
 		if (!should_log(p_type)) {
 			return;
 		}
 
 		for (int i = 0; i < loggers.size(); ++i) {
-			loggers[i]->log_error(p_function, p_file, p_line, p_code, p_rationale, p_editor_notify, p_type);
+			loggers[i]->log_error(p_function, p_file, p_line, p_code, p_rationale, p_type);
 		}
 	}
 

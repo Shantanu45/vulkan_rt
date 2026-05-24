@@ -87,16 +87,16 @@ void remove_error_handler(const ErrorHandlerList *p_handler) {
 }
 
 // Errors without messages.
-void _err_print_error(const char *p_function, const char *p_file, int p_line, const char *p_error, bool p_editor_notify, ErrorHandlerType p_type) {
-	_err_print_error(p_function, p_file, p_line, p_error, "", p_editor_notify, p_type);
+void _err_print_error(const char *p_function, const char *p_file, int p_line, const char *p_error, ErrorHandlerType p_type) {
+	_err_print_error(p_function, p_file, p_line, p_error, "", p_type);
 }
 
-void _err_print_error(const char *p_function, const char *p_file, int p_line, const std::string &p_error, bool p_editor_notify, ErrorHandlerType p_type) {
-	_err_print_error(p_function, p_file, p_line, p_error.c_str(), "", p_editor_notify, p_type);
+void _err_print_error(const char *p_function, const char *p_file, int p_line, const std::string &p_error, ErrorHandlerType p_type) {
+	_err_print_error(p_function, p_file, p_line, p_error.c_str(), "", p_type);
 }
 
 // Main error printing function.
-void _err_print_error(const char *p_function, const char *p_file, int p_line, const char *p_error, const char *p_message, bool p_editor_notify, ErrorHandlerType p_type) {
+void _err_print_error(const char *p_function, const char *p_file, int p_line, const char *p_error, const char *p_message, ErrorHandlerType p_type) {
 	if (is_printing_error) {
 		// Fallback if we're already printing an error, to prevent infinite recursion.
 		const char *err_details = (p_message && *p_message) ? p_message : p_error;
@@ -106,13 +106,13 @@ void _err_print_error(const char *p_function, const char *p_file, int p_line, co
 
 	is_printing_error = true;
 
-	LOGF(p_function, p_file, p_line, p_error, p_message, p_editor_notify, (Util::Logger::ErrorType)p_type);
+	LOGF(p_function, p_file, p_line, p_error, p_message, (Util::Logger::ErrorType)p_type);
 
 	_global_lock();
 
 	ErrorHandlerList *l = error_handler_list;
 	while (l) {
-		l->errfunc(l->userdata, p_function, p_file, p_line, p_error, p_message, p_editor_notify, p_type);
+		l->errfunc(l->userdata, p_function, p_file, p_line, p_error, p_message, p_type);
 		l = l->next;
 	}
 
@@ -141,7 +141,7 @@ void _err_print_error_asap(const std::string &p_error, ErrorHandlerType p_type) 
 
 	ErrorHandlerList *l = error_handler_list;
 	while (l) {
-		l->errfunc(l->userdata, "", "", 0, err_details, "", false, p_type);
+		l->errfunc(l->userdata, "", "", 0, err_details, "", p_type);
 		l = l->next;
 	}
 
@@ -160,15 +160,15 @@ void _err_print_error_asap(const std::string &p_error, ErrorHandlerType p_type) 
 //	_err_print_error(p_function, p_file, p_line, p_error, p_message, p_editor_notify, p_type);
 //}
 //
-void _err_print_error(const char *p_function, const char *p_file, int p_line, const std::string &p_error, const std::string &p_message, bool p_editor_notify, ErrorHandlerType p_type) {
-	_err_print_error(p_function, p_file, p_line, p_error.c_str(), p_message.c_str(), p_editor_notify, p_type);
+void _err_print_error(const char *p_function, const char *p_file, int p_line, const std::string &p_error, const std::string &p_message, ErrorHandlerType p_type) {
+	_err_print_error(p_function, p_file, p_line, p_error.c_str(), p_message.c_str(), p_type);
 }
 
 // Index errors. (All combinations of p_message as std::string or char*.)
-void _err_print_index_error(const char *p_function, const char *p_file, int p_line, int64_t p_index, int64_t p_size, const char *p_index_str, const char *p_size_str, const char *p_message, bool p_editor_notify, bool p_fatal) {
+void _err_print_index_error(const char *p_function, const char *p_file, int p_line, int64_t p_index, int64_t p_size, const char *p_index_str, const char *p_size_str, const char *p_message, bool p_fatal) {
 	std::string fstr(p_fatal ? "FATAL: " : "");
 	std::string err(fstr + "Index " + p_index_str + " = " + std::to_string(p_index) + " is out of bounds (" + p_size_str + " = " + std::to_string(p_size) + ").");
-	_err_print_error(p_function, p_file, p_line, err, p_message, p_editor_notify, ERR_HANDLER_ERROR);
+	_err_print_error(p_function, p_file, p_line, err, p_message, ERR_HANDLER_ERROR);
 }
 
 //void _err_print_index_error(const char* p_function, const char* p_file, int p_line, int64_t p_index, int64_t p_size, const char* p_index_str, const char* p_size_str, const std::string& p_message, bool p_editor_notify, bool p_fatal) {
