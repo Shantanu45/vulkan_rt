@@ -12,7 +12,7 @@
 *********************************************************************/
 #pragma once
 
-namespace vulkan_rt::render
+namespace vulkan_rt::render::vulkan
 {
 	class VulkanDevice
 	{

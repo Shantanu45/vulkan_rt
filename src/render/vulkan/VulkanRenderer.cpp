@@ -1,7 +1,7 @@
 #include "VulkanRenderer.hpp"
 #include <stdexcept>
 
-namespace vulkan_rt::render {
+namespace vulkan_rt::render::vulkan {
 
 VulkanRenderer::VulkanRenderer() {}
 
@@ -15,4 +15,4 @@ void VulkanRenderer::wait_idle() { throw std::logic_error("The method or operati
 
 VulkanRenderer::~VulkanRenderer() {}
 
-}// namespace vulkan_rt::render
+}// namespace vulkan_rt::render::vulkan

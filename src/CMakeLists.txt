@@ -68,6 +68,7 @@ set(vulkan
     render/vulkan/VulkanSwapchain.cpp
     render/vulkan/VulkanFrameResources.hpp
     render/vulkan/VulkanFrameResources.cpp
+    render/vulkan/SurfaceProvider.hpp
 )
 
 source_group("render/vulkan" FILES ${vulkan})

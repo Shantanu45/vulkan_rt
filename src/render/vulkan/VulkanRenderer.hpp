@@ -15,7 +15,7 @@
 #include "VulkanSwapchain.hpp"
 #include "VulkanFrameResources.hpp"
 
-namespace vulkan_rt::render {
+namespace vulkan_rt::render::vulkan {
 class VulkanRenderer final : public Renderer
 {
 public:
@@ -34,4 +34,4 @@ private:
   VulkanSwapchain swapchain_;
   VulkanFrameResources frames_;
 };
-}// namespace vulkan_rt::render
+}// namespace vulkan_rt::render::vulkan
