@@ -3,7 +3,10 @@
 
 namespace vulkan_rt::render::vulkan {
 
-VulkanRenderer::VulkanRenderer() {}
+VulkanRenderer::VulkanRenderer(const VulkanRendererConfig &config, const SurfaceProvider &surface_provider)
+  : context_(config, surface_provider)
+{
+}
 
 void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scene &scene, const scene::Camera &camera)
 { throw std::logic_error("The method or operation is not implemented."); }
@@ -11,7 +14,7 @@ void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scen
 void VulkanRenderer::resize(int width, int height)
 { throw std::logic_error("The method or operation is not implemented."); }
 
-void VulkanRenderer::wait_idle() { throw std::logic_error("The method or operation is not implemented."); }
+void VulkanRenderer::wait_idle() {}
 
 VulkanRenderer::~VulkanRenderer() {}
 

@@ -19,7 +19,7 @@ namespace vulkan_rt::render::vulkan {
 class VulkanRenderer final : public Renderer
 {
 public:
-  VulkanRenderer();
+  VulkanRenderer(const VulkanRendererConfig &config, const SurfaceProvider &surface_provider);
   virtual ~VulkanRenderer() override;
 
   void render(const RenderFrameInfo &frame_info, const scene::Scene &scene, const scene::Camera &camera) override;

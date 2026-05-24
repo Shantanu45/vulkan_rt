@@ -11,15 +11,18 @@
 *********************************************************************/
 #pragma once
 #include <volk.h>
-#include "VulkanRendererConfig.hpp"
+
 #include "SurfaceProvider.hpp"
+#include "VulkanRendererConfig.hpp"
+
+#include <span>
 
 namespace vulkan_rt::render::vulkan {
 
 class VulkanContext
 {
 public:
-  VulkanContext(const VulkanRendererConfig &config, SurfaceProvider &surface_provider);
+  VulkanContext(const VulkanRendererConfig &config, const SurfaceProvider &surface_provider);
   ~VulkanContext();
 
   [[nodiscard]] VkInstance instance() const;
