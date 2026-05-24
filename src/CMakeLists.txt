@@ -58,6 +58,12 @@ set(vulkan
     render/vulkan/VulkanCheck.hpp
     render/vulkan/VulkanCheck.cpp
     render/vulkan/VulkanRendererConfig.hpp
+    render/vulkan/VulkanRenderer.hpp
+    render/vulkan/VulkanRenderer.cpp
+    render/vulkan/VulkanContext.cpp
+    render/vulkan/VulkanContext.hpp
+    render/vulkan/VulkanDevice.cpp
+    render/vulkan/VulkanDevice.cpp
 )
 
 source_group("render/vulkan" FILES ${vulkan})

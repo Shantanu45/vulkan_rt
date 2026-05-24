@@ -1,20 +1,19 @@
-/*****************************************************************//**
- * \file   VulkanCheck.hpp
- * \brief  checks:
- * - Vulkan loader present
- * - instance can be created
- * - validation layer availability
- * - physical devices found
- * 
- * \author Shantanu Kumar
- * \date   May 2026
- *********************************************************************/
-#pragma  once
+/*****************************************************************/ /**
+                                                                     * \file   VulkanCheck.hpp
+                                                                     * \brief  checks:
+                                                                     * - Vulkan loader present
+                                                                     * - instance can be created
+                                                                     * - validation layer availability
+                                                                     * - physical devices found
+                                                                     *
+                                                                     * \author Shantanu Kumar
+                                                                     * \date   May 2026
+                                                                     *********************************************************************/
+#pragma once
 #include <cstdint>
 #include <string>
 
-namespace vulkan_rt::render::vulkan
-{
+namespace vulkan_rt::render::vulkan {
 struct VulkanCheckResult
 {
   bool loader_present = false;
@@ -25,4 +24,4 @@ struct VulkanCheckResult
 };
 
 VulkanCheckResult check_vulkan(bool request_validation);
-}
+}// namespace vulkan_rt::render::vulkan
