@@ -10,6 +10,16 @@ add_test(NAME cli.has_help COMMAND ${PROJECT_NAME} --help)
 add_test(NAME cli.version_matches COMMAND ${PROJECT_NAME} --version)
 set_tests_properties(cli.version_matches PROPERTIES PASS_REGULAR_EXPRESSION "${PROJECT_VERSION}")
 
+add_test(
+  NAME cli.dry_run_config
+  COMMAND ${PROJECT_NAME}
+          --dry-run-config
+          --width 1600
+          --height 900
+          --validation
+          --gpu 0)
+set_tests_properties(cli.dry_run_config PROPERTIES PASS_REGULAR_EXPRESSION "1600x900")
+
 add_executable(tests
     test_main.cpp
 )
