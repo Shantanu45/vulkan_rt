@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <MaxCpuCount>0</MaxCpuCount>
+    <ResultsDirectory>.\TestResults</ResultsDirectory>
+    <TestSessionTimeout>60000</TestSessionTimeout>
+  </RunConfiguration>
+
+  <Catch2Adapter disabled="false">
+    <DiscoverCommandLine>--verbosity high --list-tests *</DiscoverCommandLine>
+    <DiscoverTimeout>5000</DiscoverTimeout>
+    <FilenameFilter>(?i:^tests(\.exe)?$)</FilenameFilter>
+    <WorkingDirectoryRoot>Executable</WorkingDirectoryRoot>
+    <MessageFormat>AdditionalInfo</MessageFormat>
+  </Catch2Adapter>
+</RunSettings>
