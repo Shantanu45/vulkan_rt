@@ -5,6 +5,7 @@ namespace vulkan_rt::render::vulkan {
 
 VulkanRenderer::VulkanRenderer(const VulkanRendererConfig &config, const SurfaceProvider &surface_provider)
   : context_(config, surface_provider)
+  , device_(context_, config)
 {
 }
 
@@ -23,7 +24,10 @@ void VulkanRenderer::resize(int width, int height)
   throw std::logic_error("The method or operation is not implemented.");
 }
 
-void VulkanRenderer::wait_idle() {}
+void VulkanRenderer::wait_idle()
+{
+  device_.wait_idle();
+}
 
 VulkanRenderer::~VulkanRenderer() {}
 

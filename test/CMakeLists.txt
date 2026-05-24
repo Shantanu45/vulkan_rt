@@ -26,6 +26,9 @@ if(VULKAN_RT_ENABLE_VULKAN_CONTEXT_TESTS)
   add_test(
     NAME vulkan.context_smoke
     COMMAND ${PROJECT_NAME} --vulkan-context-smoke --width 64 --height 64)
+  add_test(
+    NAME vulkan.device_smoke
+    COMMAND ${PROJECT_NAME} --vulkan-device-smoke --width 64 --height 64)
 endif()
 
 add_executable(tests

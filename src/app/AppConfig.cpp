@@ -28,6 +28,9 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_flag("--vulkan-context-smoke",
     config.vulkan_context_smoke,
     "Create an SDL Vulkan window and verify VulkanContext instance/surface creation.");
+  cli.add_flag("--vulkan-device-smoke",
+    config.vulkan_device_smoke,
+    "Create VulkanContext and VulkanDevice, then report selected GPU and queue families.");
 
   try {
     cli.parse(argc, argv);

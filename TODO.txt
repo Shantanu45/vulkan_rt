@@ -94,6 +94,8 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [ ] Manually verify that Vulkan validation can be enabled.
 - [x] Add an opt-in VulkanContext smoke path that creates an SDL Vulkan surface
       and Vulkan instance.
+- [x] Add VulkanDevice selection/logical-device creation and an opt-in smoke
+      path.
 - [ ] Manually verify that the procedural scene renders through the ray tracing
       pipeline.
 - [ ] Manually verify that camera movement resets accumulation.
