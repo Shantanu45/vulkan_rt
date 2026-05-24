@@ -31,6 +31,9 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_flag("--vulkan-device-smoke",
     config.vulkan_device_smoke,
     "Create VulkanContext and VulkanDevice, then report selected GPU and queue families.");
+  cli.add_flag("--vulkan-swapchain-smoke",
+    config.vulkan_swapchain_smoke,
+    "Create VulkanContext, VulkanDevice, and VulkanSwapchain, then report swapchain details.");
 
   try {
     cli.parse(argc, argv);

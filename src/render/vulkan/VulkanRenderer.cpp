@@ -6,6 +6,7 @@ namespace vulkan_rt::render::vulkan {
 VulkanRenderer::VulkanRenderer(const VulkanRendererConfig &config, const SurfaceProvider &surface_provider)
   : context_(config, surface_provider)
   , device_(context_, config)
+  , swapchain_(context_, device_, SwapchainExtent{.width = 1280, .height = 720})
 {
 }
 
