@@ -46,6 +46,14 @@ set(engine
 
 source_group("engine" FILES ${engine})
 
+set(render
+    render/NullRenderer.cpp
+    render/NullRenderer.hpp
+    render/Renderer.hpp
+)
+
+source_group("render" FILES ${render})
+
 set(vulkan
     render/vulkan/VulkanCheck.hpp
     render/vulkan/VulkanCheck.cpp
@@ -56,6 +64,7 @@ source_group("render/vulkan" FILES ${vulkan})
 add_executable(${PROJECT_NAME}
 ${app}
 ${engine}
+${render}
 ${vulkan}
 ${util}
 )

@@ -79,6 +79,7 @@ void Application::tick_once(double delta_seconds)
   {
     const auto extent = window_.framebuffer_extent();
     LOGD("Window resized: {}x{}", extent.width, extent.height);
+    engine_.resize(extent.width, extent.height);
     window_.clear_resize_flag();
   }
 }

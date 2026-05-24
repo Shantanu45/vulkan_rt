@@ -140,7 +140,10 @@ namespace Util
 
 	StdSpdLogger::StdSpdLogger()
 	{
-		m_logger = spdlog::stdout_color_mt("spd_logger");
+		m_logger = spdlog::get("spd_logger");
+		if (!m_logger) {
+			m_logger = spdlog::stdout_color_mt("spd_logger");
+		}
 		m_logger->set_pattern("[%^%l%$] %v");
 	}
 

@@ -59,8 +59,9 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Add CLI option: --app-smoke.
 - [x] Add EngineConfig with validation flag, requested GPU index, and scene mode.
 - [x] Add Engine with update(), render(), and frame stats placeholders.
-- [ ] Add Renderer with begin_frame(), render(scene, camera), end_frame(), and
-      resize().
+- [x] Add Renderer interface with render(), resize(), wait_idle(), and a
+      NullRenderer placeholder.
+- [ ] Expand Renderer to accept scene and camera data once those systems exist.
 - [ ] Add Scene for CPU-side geometry, material, and light data for V1
       procedural content.
 - [ ] Add Camera with position, orientation, FOV, and input-driven update.
