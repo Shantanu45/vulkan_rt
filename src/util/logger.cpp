@@ -80,6 +80,10 @@ namespace Util
 		va_end(argp);
 	}
 
+	void Logger::log_str(const std::string& msg, ErrorType p_type) {
+		logf(p_type, "%s", msg.c_str());
+	}
+
 	bool Logger::should_log([[maybe_unused]] ErrorType p_type) {
 		// SHAN: TODO: add global controls 
 		return (true /*|| CoreGlobals::print_error_enabled) && (p_err || CoreGlobals::print_line_enabled*/);
@@ -155,6 +159,22 @@ namespace Util
 			break;
 		default:
 			m_logger->info("{}", buffer);
+			break;
+		}
+	}
+
+	void StdSpdLogger::log_str(const std::string& msg, ErrorType p_type) {
+		if (!should_log(p_type)) return;
+		switch (p_type) {
+		case ErrorType::NONE:
+			m_logger->info("{}", msg);
+			if (_flush_stdout_on_print) m_logger->flush();
+			break;
+		case ErrorType::ERR_WARNING:
+			m_logger->warn("{}", msg);
+			break;
+		default:
+			m_logger->error("{}", msg);
 			break;
 		}
 	}

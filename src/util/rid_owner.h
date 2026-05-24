@@ -425,8 +425,8 @@ public:
 		}
 
 		if (alloc_count) {
-			LOGE(std::format("ERROR: {} RID allocations of type '{}' were leaked at exit.",
-					alloc_count, description ? description : typeid(T).name()).c_str());
+			LOGE("ERROR: {} RID allocations of type '{}' were leaked at exit.",
+					alloc_count, description ? description : typeid(T).name());
 
 			for (size_t i = 0; i < max_alloc; i++) {
 				uint32_t validator = chunks[i / elements_in_chunk][i % elements_in_chunk].validator;

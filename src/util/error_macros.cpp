@@ -135,7 +135,7 @@ void _err_print_error_asap(const std::string &p_error, ErrorHandlerType p_type) 
 
 	is_printing_error = true;
 
-	LOGE("%s: %s\n", _error_handler_type_string(p_type), err_details);
+	LOGE("{}: {}", _error_handler_type_string(p_type), err_details);
 
 	_global_lock();
 

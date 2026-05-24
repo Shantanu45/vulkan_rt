@@ -60,7 +60,7 @@ namespace FileSystem
 		case FileMode::ReadWrite:
 			if (!ensure_directory(path))
 			{
-				LOGE("MappedFile failed to create directory.\n");
+				LOGE("MappedFile failed to create directory.");
 				return false;
 			}
 
@@ -72,7 +72,7 @@ namespace FileSystem
 		case FileMode::WriteOnlyTransactional:
 			if (!ensure_directory(path))
 			{
-				LOGE("MappedFile failed to create directory.\n");
+				LOGE("MappedFile failed to create directory.");
 				return false;
 			}
 
@@ -221,7 +221,7 @@ namespace FileSystem
 			}
 
 			if (FAILED(code))
-				LOGE("Failed to rename file %s -> %s (0x%lx).\n", rename_from_on_close.c_str(), rename_to_on_close.c_str(), code);
+				LOGE("Failed to rename file {} -> {} (0x{:x}).", rename_from_on_close, rename_to_on_close, code);
 		}
 	}
 
@@ -297,7 +297,7 @@ namespace FileSystem
 					break;
 
 				default:
-					LOGE("Invalid notify type.\n");
+					LOGE("Invalid notify type.");
 					break;
 				}
 
@@ -331,7 +331,7 @@ namespace FileSystem
 
 		if (!ret && GetLastError() != ERROR_IO_PENDING)
 		{
-			LOGE("Failed to read directory changes async.\n");
+			LOGE("Failed to read directory changes async.");
 		}
 	}
 
@@ -340,13 +340,13 @@ namespace FileSystem
 		FileStat s = {};
 		if (!stat(path, s))
 		{
-			LOGE("Window inotify: path doesn't exist.\n");
+			LOGE("Window inotify: path doesn't exist.");
 			return -1;
 		}
 
 		if (s.type != PathType::Directory)
 		{
-			LOGE("Windows inotify: Implementation only supports directories.\n");
+			LOGE("Windows inotify: Implementation only supports directories.");
 			return -1;
 		}
 
@@ -356,7 +356,7 @@ namespace FileSystem
 				nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, nullptr);
 		if (handle == INVALID_HANDLE_VALUE)
 		{
-			LOGE("Failed to open directory for watching.\n");
+			LOGE("Failed to open directory for watching.");
 			return -1;
 		}
 

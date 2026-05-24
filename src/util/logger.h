@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdarg>
+#include <format>
+#include <string>
 #include <filesystem>
 #include "spdlog/spdlog.h"
 
@@ -56,6 +58,26 @@ namespace Util
 		void logf_warn(const char* p_format, ...);
 		void logf_info(const char* p_format, ...);
 
+		virtual void log_str(const std::string& msg, ErrorType p_type = ErrorType::NONE);
+
+		template<typename... Args>
+		void info(std::format_string<Args...> fmt_str, Args&&... args) {
+			if (!should_log(ErrorType::NONE)) return;
+			log_str(std::format(fmt_str, std::forward<Args>(args)...), ErrorType::NONE);
+		}
+
+		template<typename... Args>
+		void warn(std::format_string<Args...> fmt_str, Args&&... args) {
+			if (!should_log(ErrorType::ERR_WARNING)) return;
+			log_str(std::format(fmt_str, std::forward<Args>(args)...), ErrorType::ERR_WARNING);
+		}
+
+		template<typename... Args>
+		void error(std::format_string<Args...> fmt_str, Args&&... args) {
+			if (!should_log(ErrorType::ERR_ERROR)) return;
+			log_str(std::format(fmt_str, std::forward<Args>(args)...), ErrorType::ERR_ERROR);
+		}
+
 		virtual ~Logger() {}
 
 	protected:
@@ -81,6 +103,7 @@ namespace Util
 	public:
 		StdSpdLogger();
 		virtual void logv(const char* p_format, va_list p_list, ErrorType p_type) override;
+		virtual void log_str(const std::string& msg, ErrorType p_type) override;
 		virtual ~StdSpdLogger() {};
 	};
 
@@ -123,11 +146,11 @@ namespace Util
 	Logger* get_logger_iface();
 }
 
-#define LOGE(...) do { ((::Util::StdSpdLogger*)::Util::get_logger_iface())->logf_error(__VA_ARGS__);} while(0)
-#define LOGW(...) do { ((::Util::StdSpdLogger*)::Util::get_logger_iface())->logf_warn(__VA_ARGS__);} while(0)
-#define LOGI(...) do { ((::Util::StdSpdLogger*)::Util::get_logger_iface())->logf_info(__VA_ARGS__);} while(0)
-#define LOG(...) do { ((::Util::StdSpdLogger*)::Util::get_logger_iface())->logf(__VA_ARGS__);} while(0)
+#define LOGE(...) do { ::Util::get_logger_iface()->error(__VA_ARGS__); } while(0)
+#define LOGW(...) do { ::Util::get_logger_iface()->warn(__VA_ARGS__); } while(0)
+#define LOGI(...) do { ::Util::get_logger_iface()->info(__VA_ARGS__); } while(0)
+#define LOG(...) do { ::Util::get_logger_iface()->logf(__VA_ARGS__); } while(0)
 
-#define LOGF(...) do { ((::Util::StdSpdLogger*)::Util::get_logger_iface())->log_error(__VA_ARGS__);} while(0)
+#define LOGF(...) do { ::Util::get_logger_iface()->log_error(__VA_ARGS__); } while(0)
 
 

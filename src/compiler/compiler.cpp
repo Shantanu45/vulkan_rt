@@ -59,7 +59,7 @@ namespace Compiler
 	{
 		if (!iface.load_text_file(path, source))
 		{
-			LOGE("Failed to load shader: %s\n", path.c_str());
+			LOGE("Failed to load shader: {}", path);
 			return false;
 		}
 
@@ -77,7 +77,7 @@ namespace Compiler
 	{
 		if (!iface.load_text_file(path, source))
 		{
-			LOGE("Failed to load shader: %s\n", path.c_str());
+			LOGE("Failed to load shader: {}", path);
 			return false;
 		}
 
@@ -146,7 +146,7 @@ namespace Compiler
 				std::string included_source;
 				if (!find_include_path(path, include_path, include_path, included_source))
 				{
-					LOGE("Failed to include GLSL file: %s\n", include_path.c_str());
+					LOGE("Failed to include GLSL file: {}", include_path);
 					return false;
 				}
 

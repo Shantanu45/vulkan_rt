@@ -18,7 +18,7 @@ int main(int argc, char **argv)
   spdlog::debug("Git SHA: {}", vulkan_rt::cmake::git_sha);
   if(config.dry_run_config)
   {
-    fmt::println(
+    LOGI(
       "{} {} config: {}x{}, validation={}, gpu={}, scene={}, app_smoke={}",
       vulkan_rt::cmake::project_name,
       vulkan_rt::cmake::project_version,
@@ -34,10 +34,10 @@ int main(int argc, char **argv)
   if (config.check_vulkan)
   { 
       auto result = vulkan_rt::render::vulkan::check_vulkan(true);
-      LOGI("\n loader: %s,\n instance creation: %s,\n validation: %s,\n phsical device count: %zu\n",
-        result.loader_present ? "true" : "false",
-        result.instance_created ? "true" : "false",
-        result.validation_layer_available ? "true" : "false",
+      LOGI("\n loader: {},\n instance creation: {},\n validation: {},\n phsical device count: {}\n",
+        result.loader_present,
+        result.instance_created,
+        result.validation_layer_available,
         result.physical_device_count);
       return 0;
   }

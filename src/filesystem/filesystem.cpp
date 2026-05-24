@@ -131,7 +131,7 @@ namespace FileSystem
 		if (default_asset_directory)
 		{
 #ifdef EE_SHIPPING
-			LOGW("Default asset directory %s was provided, but this is only intended for non-shipping configs.\n",
+			LOGW("Default asset directory {} was provided, but this is only intended for non-shipping configs.",
 				default_asset_directory);
 #else
 			filesystem->register_protocol("assets",
@@ -143,17 +143,17 @@ namespace FileSystem
 		if (filesystem->stat(assets_dir, s) && s.type == PathType::Directory)
 		{
 			filesystem->register_protocol("assets", std::make_unique<OSFilesystem>(assets_dir));
-			LOGI("Redirecting filesystem \"assets\" to %s.\n", assets_dir.c_str());
+			LOGI("Redirecting filesystem \"assets\" to {}.", assets_dir);
 
 			auto cache_dir = Path::join(self_dir, "cache");
 			filesystem->register_protocol("cache", std::make_unique<OSFilesystem>(cache_dir));
-			LOGI("Redirecting filesystem \"cache\" to %s.\n", cache_dir.c_str());
+			LOGI("Redirecting filesystem \"cache\" to {}.", cache_dir);
 		}
 
 		if (filesystem->stat(builtin_dir, s) && s.type == PathType::Directory)
 		{
 			filesystem->register_protocol("builtin", std::make_unique<OSFilesystem>(builtin_dir));
-			LOGI("Redirecting filesystem \"builtin\" to %s.\n", builtin_dir.c_str());
+			LOGI("Redirecting filesystem \"builtin\" to {}.", builtin_dir);
 		}
 
 		// These filesystems are core functionality.

@@ -6,6 +6,8 @@
 #include "libassert/assert.hpp"
 #include <set>
 
+#define VULKAN_DEBUG
+
 namespace vulkan_rt::render::vulkan
 {
 struct Vendor
@@ -81,7 +83,7 @@ Error _initialize_vulkan_version()
 Error _initializee_volk()
 {
   if (volkInitialize() != VK_SUCCESS) {
-    LOGE("Failed to initialize Vulkan loader via volk.\n");
+    LOGE("Failed to initialize Vulkan loader via volk.");
     return ERR_CANT_CREATE;
   }
   check_result.loader_present = true;
@@ -92,9 +94,6 @@ void _fill_reqiured_instance_extensions()
 {
   std::array extenstions = {
     VK_KHR_SURFACE_EXTENSION_NAME,
-#ifdef VULKAN_DEBUG
-    VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-#endif// VULKAN DEBUG
     VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,     // This extension allows us to use the properties2 features to query additional device capabilities.
     VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME,        // This extension allows us to use colorspaces other than SRGB.
 #ifdef VULKAN_DEBUG
@@ -135,7 +134,7 @@ Error _validate_reqired_instance_extensions()
         std::string msg = "Required extension " + requested_extension.first + " not found.";
         ERR_FAIL_V_MSG(ERR_BUG, msg.c_str());
       } else {
-        LOGI("Optional extension %s not found.", requested_extension.first.c_str());
+        LOGI("Optional extension {} not found.", requested_extension.first);
       }
     }
   }
@@ -166,6 +165,60 @@ Error _create_vulkan_instance(const VkInstanceCreateInfo *p_create_info,
   return OK;
 }
 
+Error _find_validation_layers(std::vector<const char *> &r_layer_names)
+{
+  r_layer_names.clear();
+
+  uint32_t instance_layer_count = 0;
+  VkResult err = vkEnumerateInstanceLayerProperties(&instance_layer_count, nullptr);
+  ERR_FAIL_COND_V(err != VK_SUCCESS, ERR_CANT_CREATE);
+  if (instance_layer_count > 0) {
+    std::vector<VkLayerProperties> layer_properties;
+    layer_properties.resize(instance_layer_count);
+    err = vkEnumerateInstanceLayerProperties(&instance_layer_count, layer_properties.data());
+    ERR_FAIL_COND_V(err != VK_SUCCESS, ERR_CANT_CREATE);
+
+    // Preferred set of validation layers.
+    const std::initializer_list<const char *> preferred = { "VK_LAYER_KHRONOS_validation" };
+
+    // Alternative (deprecated, removed in SDK 1.1.126.0) set of validation layers.
+    const std::initializer_list<const char *> lunarg = { "VK_LAYER_LUNARG_standard_validation" };
+
+    // Alternative (deprecated, removed in SDK 1.1.121.1) set of validation layers.
+    const std::initializer_list<const char *> google = { "VK_LAYER_GOOGLE_threading",
+      "VK_LAYER_LUNARG_parameter_validation",
+      "VK_LAYER_LUNARG_object_tracker",
+      "VK_LAYER_LUNARG_core_validation",
+      "VK_LAYER_GOOGLE_unique_objects" };
+
+    // Verify all the layers of the list are present.
+    for (const std::initializer_list<const char *> &list : { preferred, lunarg, google }) {
+      bool layers_found = false;
+      for (const char *layer_name : list) {
+        layers_found = false;
+
+        for (const VkLayerProperties &properties : layer_properties) {
+          if (!strcmp(properties.layerName, layer_name)) {
+            layers_found = true;
+            break;
+          }
+        }
+
+        if (!layers_found) { break; }
+      }
+
+      if (layers_found) {
+        r_layer_names.reserve(list.size());
+        for (const char *layer_name : list) { r_layer_names.push_back(layer_name); }
+
+        break;
+      }
+    }
+  }
+
+  return OK;
+}
+
 Error _initialize_vulkan_instance()
 {
   [[maybe_unused]] Error err;
@@ -179,7 +232,11 @@ Error _initialize_vulkan_instance()
   
   #ifdef VULKAN_DEBUG
     err = _find_validation_layers(enabled_layer_names);
+  if (err == OK) {
+    check_result.validation_layer_available = true;
+  } else {
     ERR_FAIL_COND_V(err != OK, err);
+  }
   #endif //VULKAN_DEBUG
 
     VkInstanceCreateInfo instance_info = {};
