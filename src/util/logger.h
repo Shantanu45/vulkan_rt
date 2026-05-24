@@ -159,6 +159,7 @@ namespace Util
 
 	void set_logger_iface(Logger* iface);
 	Logger* get_logger_iface();
+	void set_debug_logging_enabled(bool enabled);
 }
 
 #define LOGE(...) do { ::Util::get_logger_iface()->error(__VA_ARGS__); } while(0)

@@ -330,4 +330,9 @@ namespace Util
 		DEBUG_ASSERT(logger_iface);
 		return logger_iface;
 	}
+
+	void set_debug_logging_enabled(bool enabled)
+	{
+		spdlog::set_level(enabled ? spdlog::level::debug : spdlog::level::info);
+	}
 }
