@@ -15,11 +15,14 @@
 #include "VulkanSwapchain.hpp"
 #include "VulkanFrameResources.hpp"
 
+#include <vector>
+
 namespace vulkan_rt::render::vulkan {
 class VulkanRenderer final : public Renderer
 {
 public:
-  VulkanRenderer(const VulkanRendererConfig &config, const SurfaceProvider &surface_provider);
+  VulkanRenderer(
+    const VulkanRendererConfig &config, const SurfaceProvider &surface_provider, SwapchainExtent requested_extent);
   virtual ~VulkanRenderer() override;
 
   void render(const RenderFrameInfo &frame_info, const scene::Scene &scene, const scene::Camera &camera) override;
@@ -33,5 +36,6 @@ private:
   VulkanDevice device_;
   VulkanSwapchain swapchain_;
   VulkanFrameResources frames_;
+  std::vector<VkImageLayout> swapchain_image_layouts_;
 };
 }// namespace vulkan_rt::render::vulkan

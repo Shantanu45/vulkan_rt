@@ -18,6 +18,7 @@ struct AppConfig
   bool vulkan_device_smoke = false;
   bool vulkan_swapchain_smoke = false;
   bool vulkan_frame_smoke = false;
+  bool vulkan_clear_smoke = false;
 };
 
 AppConfig parse_app_config(int argc, char **argv);

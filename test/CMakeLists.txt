@@ -35,6 +35,9 @@ if(VULKAN_RT_ENABLE_VULKAN_CONTEXT_TESTS)
   add_test(
     NAME vulkan.frame_smoke
     COMMAND ${PROJECT_NAME} --vulkan-frame-smoke --width 64 --height 64)
+  add_test(
+    NAME vulkan.clear_smoke
+    COMMAND ${PROJECT_NAME} --vulkan-clear-smoke --width 64 --height 64)
 endif()
 
 add_executable(tests
