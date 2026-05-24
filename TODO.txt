@@ -13,7 +13,7 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Add an app layer for SDL3 window creation, main loop, input, UI-layer
       boundary, and CLI options.
 - [ ] Add the real ImGui overlay once the Vulkan renderer/backend exists.
-- [ ] Add an engine layer for renderer orchestration, frame lifecycle, and scene
+- [x] Add an initial engine layer for frame lifecycle and future renderer/scene
       ownership.
 - [ ] Add a render/vulkan layer for Vulkan instance/device/swapchain, command
       pools, synchronization, descriptors, pipelines, acceleration structures,
@@ -57,9 +57,8 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Keep --version.
 - [x] Keep --verbose.
 - [x] Add CLI option: --app-smoke.
-- [ ] Add EngineConfig with window size, validation flag, requested GPU index,
-      and scene mode.
-- [ ] Add Engine with run(), owning the app loop and renderer.
+- [x] Add EngineConfig with validation flag, requested GPU index, and scene mode.
+- [x] Add Engine with update(), render(), and frame stats placeholders.
 - [ ] Add Renderer with begin_frame(), render(scene, camera), end_frame(), and
       resize().
 - [ ] Add Scene for CPU-side geometry, material, and light data for V1

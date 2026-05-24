@@ -27,6 +27,7 @@ Application::Application(AppConfig config)
   , window_(fmt::format("{} {}", vulkan_rt::cmake::project_name, vulkan_rt::cmake::project_version),
       config_.width,
       config_.height)
+  , engine_(engine::make_engine_config(config_))
   , previous_frame_time_(Clock::now())
 {
   spdlog::info("Created SDL3 application window: {}x{}", config_.width, config_.height);
@@ -42,18 +43,7 @@ int Application::run()
     const std::chrono::duration<double> delta = now - previous_frame_time_;
     previous_frame_time_ = now;
 
-    window_.poll_events(input_);
-
-    ui_.begin_frame();
-    ui_.draw(build_ui_stats(delta.count()));
-    ui_.end_frame();
-
-    if(window_.was_resized())
-    {
-      const auto extent = window_.framebuffer_extent();
-      spdlog::debug("Window resized: {}x{}", extent.width, extent.height);
-      window_.clear_resize_flag();
-    }
+    tick_once(delta.count());
 
     SDL_Delay(1);
   }
@@ -67,23 +57,29 @@ int Application::smoke_test()
   const std::chrono::duration<double> delta = now - previous_frame_time_;
   previous_frame_time_ = now;
 
-  window_.poll_events(input_);
-
-  ui_.begin_frame();
-  ui_.draw(build_ui_stats(delta.count()));
-  ui_.end_frame();
+  tick_once(delta.count());
 
   const auto extent = window_.framebuffer_extent();
   spdlog::info("Application smoke test passed: framebuffer {}x{}", extent.width, extent.height);
   return 0;
 }
 
-UiStats Application::build_ui_stats(double frame_time_seconds) const
+void Application::tick_once(double delta_seconds)
 {
-  UiStats stats;
-  stats.frame_time_ms = frame_time_seconds * 1000.0;
-  stats.fps = frame_time_seconds > 0.0 ? 1.0 / frame_time_seconds : 0.0;
-  stats.framebuffer_extent = window_.framebuffer_extent();
-  return stats;
+  window_.poll_events(input_);
+
+  engine_.update(input_, delta_seconds);
+  engine_.render();
+
+  ui_.begin_frame();
+  ui_.draw(make_ui_stats(engine_.frame_stats(), window_.framebuffer_extent()));
+  ui_.end_frame();
+
+  if(window_.was_resized())
+  {
+    const auto extent = window_.framebuffer_extent();
+    spdlog::debug("Window resized: {}x{}", extent.width, extent.height);
+    window_.clear_resize_flag();
+  }
 }
 }

@@ -4,6 +4,7 @@
 #include "app/Input.hpp"
 #include "app/UiLayer.hpp"
 #include "app/Window.hpp"
+#include "engine/Engine.hpp"
 
 #include <chrono>
 
@@ -38,12 +39,13 @@ public:
 private:
   using Clock = std::chrono::steady_clock;
 
-  [[nodiscard]] UiStats build_ui_stats(double frame_time_seconds) const;
+  void tick_once(double delta_seconds);
 
   AppConfig config_;
   SdlRuntime sdl_runtime_;
   Window window_;
   Input input_;
+  engine::Engine engine_;
   UiLayer ui_;
   Clock::time_point previous_frame_time_;
 };

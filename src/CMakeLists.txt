@@ -36,6 +36,16 @@ set(app
 
 source_group("app" FILES ${app})
 
+set(engine
+    engine/Engine.cpp
+    engine/Engine.hpp
+    engine/EngineConfig.cpp
+    engine/EngineConfig.hpp
+    engine/FrameStats.hpp
+)
+
+source_group("engine" FILES ${engine})
+
 set(vulkan
     render/vulkan/VulkanCheck.hpp
     render/vulkan/VulkanCheck.cpp
@@ -45,6 +55,7 @@ source_group("render/vulkan" FILES ${vulkan})
 
 add_executable(${PROJECT_NAME}
 ${app}
+${engine}
 ${vulkan}
 ${util}
 )
