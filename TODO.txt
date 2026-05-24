@@ -61,7 +61,7 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Add Engine with update(), render(), and frame stats placeholders.
 - [x] Add Renderer interface with render(), resize(), wait_idle(), and a
       NullRenderer placeholder.
-- [ ] Expand Renderer to accept scene and camera data once those systems exist.
+- [x] Expand Renderer to accept scene and camera data once those systems exist.
 - [x] Add Scene for CPU-side geometry, material, and light data for V1
       procedural content.
 - [x] Add Camera with position, orientation, FOV, and viewport aspect.

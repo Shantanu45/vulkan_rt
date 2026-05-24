@@ -2,9 +2,11 @@
 
 namespace vulkan_rt::render
 {
-void NullRenderer::render(const RenderFrameInfo &frame_info)
+void NullRenderer::render(const RenderFrameInfo &frame_info, const scene::Scene &scene, const scene::Camera &camera)
 {
   static_cast<void>(frame_info);
+  static_cast<void>(scene);
+  static_cast<void>(camera);
 }
 
 void NullRenderer::resize(int width, int height)

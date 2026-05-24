@@ -1,5 +1,8 @@
 #pragma once
 
+#include "scene/Camera.hpp"
+#include "scene/Scene.hpp"
+
 #include <cstdint>
 
 namespace vulkan_rt::render
@@ -16,7 +19,7 @@ class Renderer
 public:
   virtual ~Renderer() = default;
 
-  virtual void render(const RenderFrameInfo &frame_info) = 0;
+  virtual void render(const RenderFrameInfo &frame_info, const scene::Scene &scene, const scene::Camera &camera) = 0;
   virtual void resize(int width, int height) = 0;
   virtual void wait_idle() = 0;
 };

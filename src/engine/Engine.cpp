@@ -29,10 +29,12 @@ void Engine::update(double delta_seconds)
 void Engine::render()
 {
   renderer_->render(render::RenderFrameInfo{
-    .frame_index = frame_stats_.frame_index,
-    .frame_time_ms = frame_stats_.frame_time_ms,
-    .fps = frame_stats_.fps,
-  });
+                     .frame_index = frame_stats_.frame_index,
+                     .frame_time_ms = frame_stats_.frame_time_ms,
+                     .fps = frame_stats_.fps,
+                   },
+    scene_,
+    camera_);
   ++frame_stats_.frame_index;
 }
 
