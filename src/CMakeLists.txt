@@ -64,6 +64,8 @@ set(vulkan
     render/vulkan/VulkanRendererConfig.hpp
     render/vulkan/VulkanRenderer.hpp
     render/vulkan/VulkanRenderer.cpp
+    render/vulkan/RayTracingPipeline.hpp
+    render/vulkan/RayTracingPipeline.cpp
     render/vulkan/ShaderModule.hpp
     render/vulkan/ShaderModule.cpp
     render/vulkan/VulkanContext.hpp

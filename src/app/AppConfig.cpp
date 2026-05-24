@@ -40,6 +40,9 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_flag("--vulkan-shader-smoke",
     config.vulkan_shader_smoke,
     "Create Vulkan shader modules from the compiled ray tracing SPIR-V files, then report handles.");
+  cli.add_flag("--vulkan-rt-pipeline-smoke",
+    config.vulkan_rt_pipeline_smoke,
+    "Create a minimal Vulkan ray tracing pipeline from the compiled shader modules.");
   cli.add_flag("--vulkan-clear-smoke",
     config.vulkan_clear_smoke,
     "Create VulkanRenderer, clear/present a few frames, and exit.");

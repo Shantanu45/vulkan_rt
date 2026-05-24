@@ -39,6 +39,9 @@ if(VULKAN_RT_ENABLE_VULKAN_CONTEXT_TESTS)
     NAME vulkan.shader_smoke
     COMMAND ${PROJECT_NAME} --vulkan-shader-smoke --width 64 --height 64)
   add_test(
+    NAME vulkan.rt_pipeline_smoke
+    COMMAND ${PROJECT_NAME} --vulkan-rt-pipeline-smoke --width 64 --height 64)
+  add_test(
     NAME vulkan.clear_smoke
     COMMAND ${PROJECT_NAME} --vulkan-clear-smoke --width 64 --height 64)
   add_test(
