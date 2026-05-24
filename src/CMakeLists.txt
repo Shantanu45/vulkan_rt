@@ -28,6 +28,8 @@ set(app
   app/Application.hpp
   app/Input.cpp
   app/Input.hpp
+  app/SdlSurfaceProvider.cpp
+  app/SdlSurfaceProvider.hpp
   app/UiLayer.cpp
   app/UiLayer.hpp
   app/Window.cpp
