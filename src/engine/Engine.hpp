@@ -1,6 +1,5 @@
 #pragma once
 
-#include "app/Input.hpp"
 #include "engine/EngineConfig.hpp"
 #include "engine/FrameStats.hpp"
 
@@ -11,7 +10,7 @@ class Engine
 public:
   explicit Engine(EngineConfig config);
 
-  void update(const app::Input &input, double delta_seconds);
+  void update(double delta_seconds);
   void render();
 
   [[nodiscard]] const FrameStats &frame_stats() const;

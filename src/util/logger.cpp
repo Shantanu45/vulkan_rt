@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "spdlog/sinks/rotating_file_sink.h"
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include "libassert/assert.hpp"
 
 namespace Util
 {
@@ -327,7 +326,10 @@ namespace Util
 
 	Logger* get_logger_iface()
 	{
-		DEBUG_ASSERT(logger_iface);
+		static StdSpdLogger default_logger;
+		if (!logger_iface) {
+			logger_iface = &default_logger;
+		}
 		return logger_iface;
 	}
 

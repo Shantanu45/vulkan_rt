@@ -68,7 +68,7 @@ void Application::tick_once(double delta_seconds)
 {
   window_.poll_events(input_);
 
-  engine_.update(input_, delta_seconds);
+  engine_.update(delta_seconds);
   engine_.render();
 
   ui_.begin_frame();

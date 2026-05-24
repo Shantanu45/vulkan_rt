@@ -21,6 +21,7 @@ add_test(
 set_tests_properties(cli.dry_run_config PROPERTIES PASS_REGULAR_EXPRESSION "1600x900")
 
 add_executable(tests
+    engine_tests.cpp
     test_main.cpp
 )
 
@@ -29,7 +30,14 @@ target_link_libraries(
   PRIVATE vulkan_rt::vulkan_rt_warnings
           vulkan_rt::vulkan_rt_options
           Catch2::Catch2WithMain
+          fmt::fmt
           spdlog::spdlog)
+
+target_sources(tests PRIVATE
+    "${CMAKE_SOURCE_DIR}/src/engine/Engine.cpp"
+    "${CMAKE_SOURCE_DIR}/src/engine/EngineConfig.cpp"
+    "${CMAKE_SOURCE_DIR}/src/util/logger.cpp"
+)
 
 vulkan_rt_configure_linker(tests)
 
