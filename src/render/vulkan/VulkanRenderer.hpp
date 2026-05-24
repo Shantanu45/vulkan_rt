@@ -1,3 +1,13 @@
+/*****************************************************************//**
+ * \file   VulkanRenderer.hpp
+ * \brief  VulkanRenderer
+ * high-level renderer backend
+ * owns context, device, swapchain, frame resources
+ * implements Renderer::render / resize / wait_idle
+ * 
+ * \author Shantanu Kumar
+ * \date   May 2026
+ *********************************************************************/
 #pragma once
 #include "../Renderer.hpp"
 

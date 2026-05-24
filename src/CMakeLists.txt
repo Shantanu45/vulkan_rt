@@ -60,10 +60,14 @@ set(vulkan
     render/vulkan/VulkanRendererConfig.hpp
     render/vulkan/VulkanRenderer.hpp
     render/vulkan/VulkanRenderer.cpp
-    render/vulkan/VulkanContext.cpp
     render/vulkan/VulkanContext.hpp
+    render/vulkan/VulkanContext.cpp
+    render/vulkan/VulkanDevice.hpp
     render/vulkan/VulkanDevice.cpp
-    render/vulkan/VulkanDevice.cpp
+    render/vulkan/VulkanSwapchain.hpp
+    render/vulkan/VulkanSwapchain.cpp
+    render/vulkan/VulkanFrameResources.hpp
+    render/vulkan/VulkanFrameResources.cpp
 )
 
 source_group("render/vulkan" FILES ${vulkan})
