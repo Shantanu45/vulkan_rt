@@ -4,6 +4,7 @@
 #include <fmt/format.h>
 #include <internal_use_only/config.hpp>
 #include <spdlog/spdlog.h>
+#include "util/logger.h"
 
 #include <stdexcept>
 #include <string>
@@ -78,7 +79,7 @@ void Application::tick_once(double delta_seconds)
   if(window_.was_resized())
   {
     const auto extent = window_.framebuffer_extent();
-    spdlog::debug("Window resized: {}x{}", extent.width, extent.height);
+    LOGD("Window resized: {}x{}", extent.width, extent.height);
     window_.clear_resize_flag();
   }
 }

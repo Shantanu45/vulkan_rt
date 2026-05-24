@@ -80,6 +80,20 @@ namespace Util
 		va_end(argp);
 	}
 
+	void Logger::logf_debug(const char* p_format, ...)
+	{
+		if (!should_log(ErrorType::ERR_DEBUG)) {
+			return;
+		}
+
+		va_list argp;
+		va_start(argp, p_format);
+
+		logv(p_format, argp, ErrorType::ERR_DEBUG);
+
+		va_end(argp);
+	}
+
 	void Logger::log_str(const std::string& msg, ErrorType p_type) {
 		logf(p_type, "%s", msg.c_str());
 	}
@@ -101,6 +115,12 @@ namespace Util
 
 		switch (p_type)
 		{
+		case Util::Logger::ERR_DEBUG:
+			vprintf(p_format, p_list);
+			if (_flush_stdout_on_print) {
+				fflush(stdout);
+			}
+			break;
 		case Util::Logger::NONE:
 			vprintf(p_format, p_list);
 			if (_flush_stdout_on_print) {
@@ -139,6 +159,14 @@ namespace Util
 
 		switch (p_type)
 		{
+		case Util::Logger::ERR_DEBUG:
+		{
+			m_logger->debug("{}", buffer);
+			if (_flush_stdout_on_print) {
+				m_logger->flush();
+			}
+			break;
+		}
 		case Util::Logger::NONE:
 		{
 			m_logger->info("{}", buffer);
@@ -166,6 +194,10 @@ namespace Util
 	void StdSpdLogger::log_str(const std::string& msg, ErrorType p_type) {
 		if (!should_log(p_type)) return;
 		switch (p_type) {
+		case ErrorType::ERR_DEBUG:
+			m_logger->debug("{}", msg);
+			if (_flush_stdout_on_print) m_logger->flush();
+			break;
 		case ErrorType::NONE:
 			m_logger->info("{}", msg);
 			if (_flush_stdout_on_print) m_logger->flush();
@@ -203,6 +235,9 @@ namespace Util
 		auto level = spdlog::level::info;
 		switch (p_type)
 		{
+		case Util::Logger::ERR_DEBUG:
+			level = spdlog::level::debug;
+			break;
 		case Util::Logger::NONE:
 			level = spdlog::level::info;
 			break;

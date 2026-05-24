@@ -1,6 +1,6 @@
 #include "engine/Engine.hpp"
 
-#include <spdlog/spdlog.h>
+#include "util/logger.h"
 
 #include <utility>
 
@@ -9,7 +9,7 @@ namespace vulkan_rt::engine
 Engine::Engine(EngineConfig config)
   : config_(std::move(config))
 {
-  spdlog::debug(
+  LOGD(
     "Engine initialized: validation={}, gpu={}, scene={}", config_.validation, config_.gpu_index, config_.scene);
 }
 

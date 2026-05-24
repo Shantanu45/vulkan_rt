@@ -16,7 +16,7 @@ int main(int argc, char **argv)
   auto config = vulkan_rt::app::parse_app_config(argc, argv);
   if(config.verbose) { spdlog::set_level(spdlog::level::debug); }
 
-  spdlog::debug("Git SHA: {}", vulkan_rt::cmake::git_sha);
+  LOGD("Git SHA: {}", vulkan_rt::cmake::git_sha);
   if(config.dry_run_config)
   {
     LOGI(

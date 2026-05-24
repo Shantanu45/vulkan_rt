@@ -1,9 +1,12 @@
 #pragma once
 
 #include <cstdarg>
+#include <memory>
 #include <format>
 #include <string>
 #include <filesystem>
+#include <utility>
+#include <vector>
 #include "spdlog/spdlog.h"
 
 namespace fs = std::filesystem;
@@ -13,6 +16,7 @@ namespace Util
 	class Logger {
 	public:
 		enum ErrorType {
+			ERR_DEBUG,
 			NONE,
 			ERR_ERROR,
 			ERR_WARNING,
@@ -22,6 +26,8 @@ namespace Util
 
 		static constexpr const char* error_type_string(ErrorType p_type) {
 			switch (p_type) {
+			case ERR_DEBUG:
+				return "DEBUG";
 			case ERR_ERROR:
 				return "ERROR";
 			case ERR_WARNING:
@@ -36,6 +42,8 @@ namespace Util
 
 		static constexpr const char* error_type_indent(ErrorType p_type) {
 			switch (p_type) {
+			case ERR_DEBUG:
+				return "  ";
 			case ERR_ERROR:
 				return "   ";
 			case ERR_WARNING:
@@ -57,8 +65,15 @@ namespace Util
 		void logf_error(const char* p_format, ...);
 		void logf_warn(const char* p_format, ...);
 		void logf_info(const char* p_format, ...);
+		void logf_debug(const char* p_format, ...);
 
 		virtual void log_str(const std::string& msg, ErrorType p_type = ErrorType::NONE);
+
+		template<typename... Args>
+		void debug(std::format_string<Args...> fmt_str, Args&&... args) {
+			if (!should_log(ErrorType::ERR_DEBUG)) return;
+			log_str(std::format(fmt_str, std::forward<Args>(args)...), ErrorType::ERR_DEBUG);
+		}
 
 		template<typename... Args>
 		void info(std::format_string<Args...> fmt_str, Args&&... args) {
@@ -149,6 +164,7 @@ namespace Util
 #define LOGE(...) do { ::Util::get_logger_iface()->error(__VA_ARGS__); } while(0)
 #define LOGW(...) do { ::Util::get_logger_iface()->warn(__VA_ARGS__); } while(0)
 #define LOGI(...) do { ::Util::get_logger_iface()->info(__VA_ARGS__); } while(0)
+#define LOGD(...) do { ::Util::get_logger_iface()->debug(__VA_ARGS__); } while(0)
 #define LOG(...) do { ::Util::get_logger_iface()->logf(__VA_ARGS__); } while(0)
 
 #define LOGF(...) do { ::Util::get_logger_iface()->log_error(__VA_ARGS__); } while(0)
