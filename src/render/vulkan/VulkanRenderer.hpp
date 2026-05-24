@@ -32,10 +32,15 @@ public:
   void wait_idle() override;
 
 private:
+  void recreate_swapchain_if_needed();
+  void recreate_swapchain(SwapchainExtent extent);
+
   VulkanContext context_;
   VulkanDevice device_;
   VulkanSwapchain swapchain_;
   VulkanFrameResources frames_;
   std::vector<VkImageLayout> swapchain_image_layouts_;
+  SwapchainExtent pending_extent_{};
+  bool swapchain_recreate_requested_ = false;
 };
 }// namespace vulkan_rt::render::vulkan

@@ -198,4 +198,55 @@ int vulkan_clear_smoke_test(const AppConfig &config)
   LOGI("Vulkan clear smoke passed: presented 8 clear frames");
   return 0;
 }
+
+int vulkan_resize_smoke_test(const AppConfig &config)
+{
+  SdlRuntime sdl_runtime;
+  Window window{
+    fmt::format("{} Vulkan resize smoke", vulkan_rt::cmake::project_name),
+    config.width,
+    config.height,
+  };
+
+  SdlSurfaceProvider surface_provider{window.native_handle()};
+  const std::string application_name{vulkan_rt::cmake::project_name};
+  render::vulkan::VulkanRendererConfig vulkan_config{
+    .validation = config.validation,
+    .application_name = application_name.c_str(),
+    .gpu_index = config.gpu_index,
+  };
+
+  render::vulkan::VulkanRenderer renderer{
+    vulkan_config,
+    surface_provider,
+    render::vulkan::SwapchainExtent{
+      .width = static_cast<std::uint32_t>(config.width),
+      .height = static_cast<std::uint32_t>(config.height),
+    },
+  };
+
+  const auto procedural_scene = scene::make_procedural_scene();
+  const scene::Camera camera;
+
+  for(std::uint64_t frame = 0; frame < 4; ++frame)
+  {
+    renderer.render(render::RenderFrameInfo{.frame_index = frame}, procedural_scene, camera);
+    SDL_Delay(16);
+  }
+
+  const int resized_width = config.width + 64;
+  const int resized_height = config.height + 64;
+  SDL_SetWindowSize(window.native_handle(), resized_width, resized_height);
+  renderer.resize(resized_width, resized_height);
+
+  for(std::uint64_t frame = 4; frame < 8; ++frame)
+  {
+    renderer.render(render::RenderFrameInfo{.frame_index = frame}, procedural_scene, camera);
+    SDL_Delay(16);
+  }
+
+  renderer.wait_idle();
+  LOGI("Vulkan resize smoke passed: recreated swapchain through renderer.resize()");
+  return 0;
+}
 }

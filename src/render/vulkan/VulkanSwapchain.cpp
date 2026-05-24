@@ -20,14 +20,74 @@ struct SwapchainSupportDetails
   std::vector<VkPresentModeKHR> present_modes;
 };
 
+const char *vk_result_name(VkResult result)
+{
+  switch(result)
+  {
+  case VK_SUCCESS:
+    return "VK_SUCCESS";
+  case VK_NOT_READY:
+    return "VK_NOT_READY";
+  case VK_TIMEOUT:
+    return "VK_TIMEOUT";
+  case VK_EVENT_SET:
+    return "VK_EVENT_SET";
+  case VK_EVENT_RESET:
+    return "VK_EVENT_RESET";
+  case VK_INCOMPLETE:
+    return "VK_INCOMPLETE";
+  case VK_ERROR_OUT_OF_HOST_MEMORY:
+    return "VK_ERROR_OUT_OF_HOST_MEMORY";
+  case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+    return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
+  case VK_ERROR_INITIALIZATION_FAILED:
+    return "VK_ERROR_INITIALIZATION_FAILED";
+  case VK_ERROR_DEVICE_LOST:
+    return "VK_ERROR_DEVICE_LOST";
+  case VK_ERROR_MEMORY_MAP_FAILED:
+    return "VK_ERROR_MEMORY_MAP_FAILED";
+  case VK_ERROR_LAYER_NOT_PRESENT:
+    return "VK_ERROR_LAYER_NOT_PRESENT";
+  case VK_ERROR_EXTENSION_NOT_PRESENT:
+    return "VK_ERROR_EXTENSION_NOT_PRESENT";
+  case VK_ERROR_FEATURE_NOT_PRESENT:
+    return "VK_ERROR_FEATURE_NOT_PRESENT";
+  case VK_ERROR_INCOMPATIBLE_DRIVER:
+    return "VK_ERROR_INCOMPATIBLE_DRIVER";
+  case VK_ERROR_TOO_MANY_OBJECTS:
+    return "VK_ERROR_TOO_MANY_OBJECTS";
+  case VK_ERROR_FORMAT_NOT_SUPPORTED:
+    return "VK_ERROR_FORMAT_NOT_SUPPORTED";
+  case VK_ERROR_SURFACE_LOST_KHR:
+    return "VK_ERROR_SURFACE_LOST_KHR";
+  case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:
+    return "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR";
+  case VK_SUBOPTIMAL_KHR:
+    return "VK_SUBOPTIMAL_KHR";
+  case VK_ERROR_OUT_OF_DATE_KHR:
+    return "VK_ERROR_OUT_OF_DATE_KHR";
+  default:
+    return "UNKNOWN_VK_RESULT";
+  }
+}
+
 std::string vulkan_result_message(const char *operation, VkResult result)
 {
-  return std::string{operation} + " failed with VkResult " + std::to_string(static_cast<int>(result));
+  return std::string{operation} + " failed with " + vk_result_name(result) + " (" +
+         std::to_string(static_cast<int>(result)) + ")";
 }
 
 void throw_if_failed(VkResult result, const char *operation)
 {
   if(result != VK_SUCCESS)
+  {
+    throw std::runtime_error(vulkan_result_message(operation, result));
+  }
+}
+
+void throw_if_not_complete_or_success(VkResult result, const char *operation)
+{
+  if(result != VK_SUCCESS && result != VK_INCOMPLETE)
   {
     throw std::runtime_error(vulkan_result_message(operation, result));
   }
@@ -192,6 +252,13 @@ std::span<const VkImageView> VulkanSwapchain::image_views() const
   return std::span<const VkImageView>{image_views_};
 }
 
+void VulkanSwapchain::recreate(
+  const VulkanContext &context, const VulkanDevice &device, SwapchainExtent requested_extent)
+{
+  destroy();
+  create(context, device, requested_extent);
+}
+
 void VulkanSwapchain::create(
   const VulkanContext &context, const VulkanDevice &device, SwapchainExtent requested_extent)
 {
@@ -244,11 +311,18 @@ void VulkanSwapchain::create(
   throw_if_failed(vkCreateSwapchainKHR(device_, &create_info, nullptr, &swapchain_), "vkCreateSwapchainKHR");
 
   std::uint32_t actual_image_count = 0;
-  throw_if_failed(vkGetSwapchainImagesKHR(device_, swapchain_, &actual_image_count, nullptr), "vkGetSwapchainImagesKHR");
+  throw_if_not_complete_or_success(
+    vkGetSwapchainImagesKHR(device_, swapchain_, &actual_image_count, nullptr), "vkGetSwapchainImagesKHR");
+
+  if(actual_image_count == 0)
+  {
+    throw std::runtime_error("vkGetSwapchainImagesKHR returned zero images.");
+  }
 
   images_.resize(actual_image_count);
-  throw_if_failed(
+  throw_if_not_complete_or_success(
     vkGetSwapchainImagesKHR(device_, swapchain_, &actual_image_count, images_.data()), "vkGetSwapchainImagesKHR");
+  images_.resize(actual_image_count);
 
   image_views_.reserve(images_.size());
   for(const auto image : images_)

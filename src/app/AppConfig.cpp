@@ -40,6 +40,9 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_flag("--vulkan-clear-smoke",
     config.vulkan_clear_smoke,
     "Create VulkanRenderer, clear/present a few frames, and exit.");
+  cli.add_flag("--vulkan-resize-smoke",
+    config.vulkan_resize_smoke,
+    "Create VulkanRenderer, recreate the swapchain through resize(), and exit.");
 
   try {
     cli.parse(argc, argv);

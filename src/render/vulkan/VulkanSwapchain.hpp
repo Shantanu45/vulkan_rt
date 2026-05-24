@@ -48,6 +48,8 @@ public:
   [[nodiscard]] std::span<const VkImage> images() const;
   [[nodiscard]] std::span<const VkImageView> image_views() const;
 
+  void recreate(const VulkanContext &context, const VulkanDevice &device, SwapchainExtent requested_extent);
+
 private:
   void create(const VulkanContext &context, const VulkanDevice &device, SwapchainExtent requested_extent);
   void destroy();

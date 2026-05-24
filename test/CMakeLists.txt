@@ -38,6 +38,9 @@ if(VULKAN_RT_ENABLE_VULKAN_CONTEXT_TESTS)
   add_test(
     NAME vulkan.clear_smoke
     COMMAND ${PROJECT_NAME} --vulkan-clear-smoke --width 64 --height 64)
+  add_test(
+    NAME vulkan.resize_smoke
+    COMMAND ${PROJECT_NAME} --vulkan-resize-smoke --width 64 --height 64)
 endif()
 
 add_executable(tests

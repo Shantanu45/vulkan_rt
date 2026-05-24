@@ -66,6 +66,8 @@ void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scen
   static_cast<void>(scene);
   static_cast<void>(camera);
 
+  recreate_swapchain_if_needed();
+
   const auto frame_index = frames_.current_frame_index();
   const auto command_buffer = frames_.command_buffers()[frame_index];
   const auto image_available = frames_.image_available_semaphores()[frame_index];
@@ -166,9 +168,16 @@ void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scen
 
 void VulkanRenderer::resize(int width, int height)
 {
-  static_cast<void>(width);
-  static_cast<void>(height);
-  throw std::logic_error("The method or operation is not implemented.");
+  if(width <= 0 || height <= 0)
+  {
+    return;
+  }
+
+  pending_extent_ = SwapchainExtent{
+    .width = static_cast<std::uint32_t>(width),
+    .height = static_cast<std::uint32_t>(height),
+  };
+  swapchain_recreate_requested_ = true;
 }
 
 void VulkanRenderer::wait_idle()
@@ -177,5 +186,25 @@ void VulkanRenderer::wait_idle()
 }
 
 VulkanRenderer::~VulkanRenderer() {}
+
+void VulkanRenderer::recreate_swapchain_if_needed()
+{
+  if(!swapchain_recreate_requested_)
+  {
+    return;
+  }
+
+  recreate_swapchain(pending_extent_);
+  swapchain_recreate_requested_ = false;
+}
+
+void VulkanRenderer::recreate_swapchain(SwapchainExtent extent)
+{
+  device_.wait_idle();
+
+  // Later: pass the old swapchain handle into recreation instead of blunt replacement.
+  swapchain_.recreate(context_, device_, extent);
+  swapchain_image_layouts_.assign(swapchain_.images().size(), VK_IMAGE_LAYOUT_UNDEFINED);
+}
 
 }// namespace vulkan_rt::render::vulkan
