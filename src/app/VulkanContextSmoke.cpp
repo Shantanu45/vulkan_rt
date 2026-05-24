@@ -74,6 +74,10 @@ int vulkan_device_smoke_test(const AppConfig &config)
   LOGI("  logical device created: {}", device.device() != VK_NULL_HANDLE);
   LOGI("  graphics queue family: {}", device.queue_families().graphics.value());
   LOGI("  present queue family: {}", device.queue_families().present.value());
+  LOGI("  shader group handle size: {}", device.ray_tracing_pipeline_properties().shaderGroupHandleSize);
+  LOGI("  shader group base alignment: {}", device.ray_tracing_pipeline_properties().shaderGroupBaseAlignment);
+  LOGI("  max ray recursion depth: {}", device.ray_tracing_pipeline_properties().maxRayRecursionDepth);
+  LOGI("  max geometry count: {}", device.acceleration_structure_properties().maxGeometryCount);
 
   device.wait_idle();
   return 0;

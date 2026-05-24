@@ -50,10 +50,13 @@ public:
   [[nodiscard]] VkQueue present_queue() const;
   [[nodiscard]] const QueueFamilyIndices &queue_families() const;
   [[nodiscard]] const VkPhysicalDeviceProperties &properties() const;
+  [[nodiscard]] const VkPhysicalDeviceRayTracingPipelinePropertiesKHR &ray_tracing_pipeline_properties() const;
+  [[nodiscard]] const VkPhysicalDeviceAccelerationStructurePropertiesKHR &acceleration_structure_properties() const;
 
 private:
   void pick_physical_device(const VulkanContext &context, const VulkanRendererConfig &config);
   void create_logical_device();
+  void query_selected_device_properties();
   void destroy();
 
   VkPhysicalDevice physical_device_ = VK_NULL_HANDLE;
@@ -62,5 +65,9 @@ private:
   VkQueue present_queue_ = VK_NULL_HANDLE;
   QueueFamilyIndices queue_families_{};
   VkPhysicalDeviceProperties properties_{};
+  VkPhysicalDeviceRayTracingPipelinePropertiesKHR ray_tracing_pipeline_properties_{
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+  VkPhysicalDeviceAccelerationStructurePropertiesKHR acceleration_structure_properties_{
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
 };
 }

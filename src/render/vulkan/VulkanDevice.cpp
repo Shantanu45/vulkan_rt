@@ -14,8 +14,83 @@ namespace vulkan_rt::render::vulkan
 {
 namespace
 {
-constexpr std::array<const char *, 1> required_device_extensions{
+constexpr std::array<const char *, 5> required_device_extensions{
   VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+  VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+  VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+  VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+  VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+};
+
+struct RayTracingFeatureSupport
+{
+  bool acceleration_structure = false;
+  bool ray_tracing_pipeline = false;
+  bool buffer_device_address = false;
+
+  [[nodiscard]] bool complete() const
+  {
+    return acceleration_structure && ray_tracing_pipeline && buffer_device_address;
+  }
+};
+
+struct DeviceSuitability
+{
+  QueueFamilyIndices queue_families;
+  std::vector<std::string> missing_extensions;
+  RayTracingFeatureSupport features;
+
+  [[nodiscard]] bool suitable() const
+  {
+    return queue_families.complete() && missing_extensions.empty() && features.complete();
+  }
+
+  [[nodiscard]] std::string describe_failures() const
+  {
+    std::vector<std::string> reasons;
+
+    if(!queue_families.graphics.has_value())
+    {
+      reasons.emplace_back("missing graphics queue");
+    }
+
+    if(!queue_families.present.has_value())
+    {
+      reasons.emplace_back("missing present queue");
+    }
+
+    for(const auto &extension : missing_extensions)
+    {
+      reasons.push_back("missing device extension " + extension);
+    }
+
+    if(!features.acceleration_structure)
+    {
+      reasons.emplace_back("missing accelerationStructure feature");
+    }
+
+    if(!features.ray_tracing_pipeline)
+    {
+      reasons.emplace_back("missing rayTracingPipeline feature");
+    }
+
+    if(!features.buffer_device_address)
+    {
+      reasons.emplace_back("missing bufferDeviceAddress feature");
+    }
+
+    std::string description;
+    for(std::size_t index = 0; index < reasons.size(); ++index)
+    {
+      if(index > 0)
+      {
+        description += "; ";
+      }
+      description += reasons[index];
+    }
+
+    return description.empty() ? "unknown reason" : description;
+  }
 };
 
 std::string vulkan_result_message(const char *operation, VkResult result)
@@ -67,7 +142,7 @@ QueueFamilyIndices find_queue_families(VkPhysicalDevice physical_device, VkSurfa
   return indices;
 }
 
-bool supports_required_extensions(VkPhysicalDevice physical_device)
+std::vector<std::string> missing_required_extensions(VkPhysicalDevice physical_device)
 {
   std::uint32_t extension_count = 0;
   throw_if_failed(
@@ -79,16 +154,55 @@ bool supports_required_extensions(VkPhysicalDevice physical_device)
     vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count, available_extensions.data()),
     "vkEnumerateDeviceExtensionProperties");
 
-  return std::all_of(required_device_extensions.begin(), required_device_extensions.end(), [&](const char *required) {
-    return std::any_of(available_extensions.begin(), available_extensions.end(), [&](const auto &available) {
+  std::vector<std::string> missing_extensions;
+  for(const char *required : required_device_extensions)
+  {
+    const bool found = std::any_of(available_extensions.begin(), available_extensions.end(), [&](const auto &available) {
       return std::strcmp(available.extensionName, required) == 0;
     });
-  });
+
+    if(!found)
+    {
+      missing_extensions.emplace_back(required);
+    }
+  }
+
+  return missing_extensions;
 }
 
-bool is_device_suitable(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
+RayTracingFeatureSupport query_ray_tracing_feature_support(VkPhysicalDevice physical_device)
 {
-  return find_queue_families(physical_device, surface).complete() && supports_required_extensions(physical_device);
+  VkPhysicalDeviceBufferDeviceAddressFeatures buffer_device_address_features{};
+  buffer_device_address_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+
+  VkPhysicalDeviceAccelerationStructureFeaturesKHR acceleration_structure_features{};
+  acceleration_structure_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+  acceleration_structure_features.pNext = &buffer_device_address_features;
+
+  VkPhysicalDeviceRayTracingPipelineFeaturesKHR ray_tracing_pipeline_features{};
+  ray_tracing_pipeline_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+  ray_tracing_pipeline_features.pNext = &acceleration_structure_features;
+
+  VkPhysicalDeviceFeatures2 features{};
+  features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+  features.pNext = &ray_tracing_pipeline_features;
+
+  vkGetPhysicalDeviceFeatures2(physical_device, &features);
+
+  return RayTracingFeatureSupport{
+    .acceleration_structure = acceleration_structure_features.accelerationStructure == VK_TRUE,
+    .ray_tracing_pipeline = ray_tracing_pipeline_features.rayTracingPipeline == VK_TRUE,
+    .buffer_device_address = buffer_device_address_features.bufferDeviceAddress == VK_TRUE,
+  };
+}
+
+DeviceSuitability query_device_suitability(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
+{
+  return DeviceSuitability{
+    .queue_families = find_queue_families(physical_device, surface),
+    .missing_extensions = missing_required_extensions(physical_device),
+    .features = query_ray_tracing_feature_support(physical_device),
+  };
 }
 
 int device_score(VkPhysicalDevice physical_device)
@@ -107,6 +221,13 @@ int device_score(VkPhysicalDevice physical_device)
   }
 
   return 100;
+}
+
+std::string device_name(VkPhysicalDevice physical_device)
+{
+  VkPhysicalDeviceProperties properties{};
+  vkGetPhysicalDeviceProperties(physical_device, &properties);
+  return properties.deviceName;
 }
 }
 
@@ -134,6 +255,8 @@ VulkanDevice::VulkanDevice(VulkanDevice &&other) noexcept
   , present_queue_(other.present_queue_)
   , queue_families_(other.queue_families_)
   , properties_(other.properties_)
+  , ray_tracing_pipeline_properties_(other.ray_tracing_pipeline_properties_)
+  , acceleration_structure_properties_(other.acceleration_structure_properties_)
 {
   other.physical_device_ = VK_NULL_HANDLE;
   other.device_ = VK_NULL_HANDLE;
@@ -141,6 +264,8 @@ VulkanDevice::VulkanDevice(VulkanDevice &&other) noexcept
   other.present_queue_ = VK_NULL_HANDLE;
   other.queue_families_ = {};
   other.properties_ = {};
+  other.ray_tracing_pipeline_properties_ = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+  other.acceleration_structure_properties_ = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
 }
 
 VulkanDevice &VulkanDevice::operator=(VulkanDevice &&other) noexcept
@@ -155,6 +280,8 @@ VulkanDevice &VulkanDevice::operator=(VulkanDevice &&other) noexcept
     present_queue_ = other.present_queue_;
     queue_families_ = other.queue_families_;
     properties_ = other.properties_;
+    ray_tracing_pipeline_properties_ = other.ray_tracing_pipeline_properties_;
+    acceleration_structure_properties_ = other.acceleration_structure_properties_;
 
     other.physical_device_ = VK_NULL_HANDLE;
     other.device_ = VK_NULL_HANDLE;
@@ -162,6 +289,8 @@ VulkanDevice &VulkanDevice::operator=(VulkanDevice &&other) noexcept
     other.present_queue_ = VK_NULL_HANDLE;
     other.queue_families_ = {};
     other.properties_ = {};
+    other.ray_tracing_pipeline_properties_ = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+    other.acceleration_structure_properties_ = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
   }
 
   return *this;
@@ -205,6 +334,16 @@ const VkPhysicalDeviceProperties &VulkanDevice::properties() const
   return properties_;
 }
 
+const VkPhysicalDeviceRayTracingPipelinePropertiesKHR &VulkanDevice::ray_tracing_pipeline_properties() const
+{
+  return ray_tracing_pipeline_properties_;
+}
+
+const VkPhysicalDeviceAccelerationStructurePropertiesKHR &VulkanDevice::acceleration_structure_properties() const
+{
+  return acceleration_structure_properties_;
+}
+
 void VulkanDevice::pick_physical_device(const VulkanContext &context, const VulkanRendererConfig &config)
 {
   std::uint32_t device_count = 0;
@@ -226,9 +365,12 @@ void VulkanDevice::pick_physical_device(const VulkanContext &context, const Vulk
       throw std::runtime_error("Requested Vulkan GPU index is out of range.");
     }
 
-    if(!is_device_suitable(devices[requested_index], context.surface()))
+    const auto suitability = query_device_suitability(devices[requested_index], context.surface());
+    if(!suitability.suitable())
     {
-      throw std::runtime_error("Requested Vulkan GPU does not support required queues or device extensions.");
+      throw std::runtime_error(
+        "Requested Vulkan GPU '" + device_name(devices[requested_index]) +
+        "' does not support required Vulkan ray tracing capabilities: " + suitability.describe_failures() + ".");
     }
 
     physical_device_ = devices[requested_index];
@@ -238,7 +380,8 @@ void VulkanDevice::pick_physical_device(const VulkanContext &context, const Vulk
     int best_score = -1;
     for(const auto candidate : devices)
     {
-      if(!is_device_suitable(candidate, context.surface()))
+      const auto suitability = query_device_suitability(candidate, context.surface());
+      if(!suitability.suitable())
       {
         continue;
       }
@@ -254,11 +397,20 @@ void VulkanDevice::pick_physical_device(const VulkanContext &context, const Vulk
 
   if(physical_device_ == VK_NULL_HANDLE)
   {
-    throw std::runtime_error("No suitable Vulkan physical device found.");
+    std::string message = "No suitable Vulkan physical device found with required ray tracing capabilities.";
+    for(const auto candidate : devices)
+    {
+      const auto suitability = query_device_suitability(candidate, context.surface());
+      message += "\n  ";
+      message += device_name(candidate);
+      message += ": ";
+      message += suitability.describe_failures();
+    }
+    throw std::runtime_error(message);
   }
 
   queue_families_ = find_queue_families(physical_device_, context.surface());
-  vkGetPhysicalDeviceProperties(physical_device_, &properties_);
+  query_selected_device_properties();
 }
 
 void VulkanDevice::create_logical_device()
@@ -287,7 +439,23 @@ void VulkanDevice::create_logical_device()
     queue_create_infos.push_back(queue_create_info);
   }
 
-  VkPhysicalDeviceFeatures enabled_features{};
+  VkPhysicalDeviceBufferDeviceAddressFeatures buffer_device_address_features{};
+  buffer_device_address_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+  buffer_device_address_features.bufferDeviceAddress = VK_TRUE;
+
+  VkPhysicalDeviceAccelerationStructureFeaturesKHR acceleration_structure_features{};
+  acceleration_structure_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+  acceleration_structure_features.pNext = &buffer_device_address_features;
+  acceleration_structure_features.accelerationStructure = VK_TRUE;
+
+  VkPhysicalDeviceRayTracingPipelineFeaturesKHR ray_tracing_pipeline_features{};
+  ray_tracing_pipeline_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+  ray_tracing_pipeline_features.pNext = &acceleration_structure_features;
+  ray_tracing_pipeline_features.rayTracingPipeline = VK_TRUE;
+
+  VkPhysicalDeviceFeatures2 enabled_features{};
+  enabled_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+  enabled_features.pNext = &ray_tracing_pipeline_features;
 
   VkDeviceCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -295,12 +463,28 @@ void VulkanDevice::create_logical_device()
   create_info.pQueueCreateInfos = queue_create_infos.data();
   create_info.enabledExtensionCount = static_cast<std::uint32_t>(required_device_extensions.size());
   create_info.ppEnabledExtensionNames = required_device_extensions.data();
-  create_info.pEnabledFeatures = &enabled_features;
+  create_info.pNext = &enabled_features;
 
   throw_if_failed(vkCreateDevice(physical_device_, &create_info, nullptr, &device_), "vkCreateDevice");
 
   vkGetDeviceQueue(device_, queue_families_.graphics.value(), 0, &graphics_queue_);
   vkGetDeviceQueue(device_, queue_families_.present.value(), 0, &present_queue_);
+}
+
+void VulkanDevice::query_selected_device_properties()
+{
+  ray_tracing_pipeline_properties_ = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+  acceleration_structure_properties_ = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
+  ray_tracing_pipeline_properties_.pNext = &acceleration_structure_properties_;
+
+  VkPhysicalDeviceProperties2 properties{};
+  properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+  properties.pNext = &ray_tracing_pipeline_properties_;
+
+  vkGetPhysicalDeviceProperties2(physical_device_, &properties);
+  properties_ = properties.properties;
+
+  ray_tracing_pipeline_properties_.pNext = nullptr;
 }
 
 void VulkanDevice::destroy()
@@ -316,5 +500,7 @@ void VulkanDevice::destroy()
   present_queue_ = VK_NULL_HANDLE;
   queue_families_ = {};
   properties_ = {};
+  ray_tracing_pipeline_properties_ = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+  acceleration_structure_properties_ = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
 }
 }
