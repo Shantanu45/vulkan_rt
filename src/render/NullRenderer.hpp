@@ -2,8 +2,7 @@
 
 #include "render/Renderer.hpp"
 
-namespace vulkan_rt::render
-{
+namespace vulkan_rt::render {
 class NullRenderer final : public Renderer
 {
 public:
@@ -11,4 +10,4 @@ public:
   void resize(int width, int height) override;
   void wait_idle() override;
 };
-}
+}// namespace vulkan_rt::render

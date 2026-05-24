@@ -22,52 +22,39 @@
 
 #include "string_helpers.h"
 
-namespace Util
-{
+namespace Util {
 static std::vector<std::string> split(const std::string &str, const char *delim, bool allow_empty)
 {
-	if (str.empty())
-		return {};
-	std::vector<std::string> ret;
+  if (str.empty()) return {};
+  std::vector<std::string> ret;
 
-	size_t start_index = 0;
-	size_t index = 0;
-	while ((index = str.find_first_of(delim, start_index)) != std::string::npos)
-	{
-		if (allow_empty || index > start_index)
-			ret.push_back(str.substr(start_index, index - start_index));
-		start_index = index + 1;
+  size_t start_index = 0;
+  size_t index = 0;
+  while ((index = str.find_first_of(delim, start_index)) != std::string::npos) {
+    if (allow_empty || index > start_index) ret.push_back(str.substr(start_index, index - start_index));
+    start_index = index + 1;
 
-		if (allow_empty && (index == str.size() - 1))
-			ret.emplace_back();
-	}
+    if (allow_empty && (index == str.size() - 1)) ret.emplace_back();
+  }
 
-	if (start_index < str.size())
-		ret.push_back(str.substr(start_index));
-	return ret;
+  if (start_index < str.size()) ret.push_back(str.substr(start_index));
+  return ret;
 }
 
-std::vector<std::string> split(const std::string &str, const char *delim)
-{
-	return split(str, delim, true);
-}
+std::vector<std::string> split(const std::string &str, const char *delim) { return split(str, delim, true); }
 
-std::vector<std::string> split_no_empty(const std::string &str, const char *delim)
-{
-	return split(str, delim, false);
-}
+std::vector<std::string> split_no_empty(const std::string &str, const char *delim) { return split(str, delim, false); }
 
 std::string strip_whitespace(const std::string &str)
 {
-	std::string ret;
-	auto index = str.find_first_not_of(" \t");
-	if (index == std::string::npos)
-		return "";
-	ret = str.substr(index, std::string::npos);
-	index = ret.find_last_not_of(" \t");
-	if (index != std::string::npos)
-		return ret.substr(0, index + 1);
-	else
-		return ret;
+  std::string ret;
+  auto index = str.find_first_not_of(" \t");
+  if (index == std::string::npos) return "";
+  ret = str.substr(index, std::string::npos);
+  index = ret.find_last_not_of(" \t");
+  if (index != std::string::npos)
+    return ret.substr(0, index + 1);
+  else
+    return ret;
 }
-}
+}// namespace Util

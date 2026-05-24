@@ -2,11 +2,11 @@
 #include "app/Application.hpp"
 #include "render/vulkan/VulkanCheck.hpp"
 
+#include "util/logger.h"
 #include <fmt/format.h>
 #include <internal_use_only/config.hpp>
 #include <memory>
 #include <utility>
-#include "util/logger.h"
 
 int main(int argc, char **argv)
 {
@@ -16,10 +16,8 @@ int main(int argc, char **argv)
   ::Util::set_debug_logging_enabled(config.verbose);
 
   LOGD("Git SHA: {}", vulkan_rt::cmake::git_sha);
-  if(config.dry_run_config)
-  {
-    LOGI(
-      "{} {} config: {}x{}, validation={}, gpu={}, scene={}, app_smoke={}",
+  if (config.dry_run_config) {
+    LOGI("{} {} config: {}x{}, validation={}, gpu={}, scene={}, app_smoke={}",
       vulkan_rt::cmake::project_name,
       vulkan_rt::cmake::project_version,
       config.width,
@@ -31,24 +29,22 @@ int main(int argc, char **argv)
     return 0;
   }
 
-  if (config.check_vulkan)
-  { 
-      auto result = vulkan_rt::render::vulkan::check_vulkan(config.validation);
-      LOGI("\n loader: {},\n instance creation: {},\n validation: {},\n physical device count: {}\n",
-        result.loader_present,
-        result.instance_created,
-        result.validation_layer_available,
-        result.physical_device_count);
-      if(!result.error.empty())
-      {
-        LOGE("Vulkan check failed: {}", result.error);
-        return 1;
-      }
-      return 0;
+  if (config.check_vulkan) {
+    auto result = vulkan_rt::render::vulkan::check_vulkan(config.validation);
+    LOGI("\n loader: {},\n instance creation: {},\n validation: {},\n physical device count: {}\n",
+      result.loader_present,
+      result.instance_created,
+      result.validation_layer_available,
+      result.physical_device_count);
+    if (!result.error.empty()) {
+      LOGE("Vulkan check failed: {}", result.error);
+      return 1;
+    }
+    return 0;
   }
 
   const bool app_smoke = config.app_smoke;
-  vulkan_rt::app::Application application{std::move(config)};
-  if(app_smoke) { return application.smoke_test(); }
+  vulkan_rt::app::Application application{ std::move(config) };
+  if (app_smoke) { return application.smoke_test(); }
   return application.run();
 }

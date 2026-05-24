@@ -4,8 +4,7 @@
 #include <span>
 #include <vector>
 
-namespace vulkan_rt::scene
-{
+namespace vulkan_rt::scene {
 struct Vec3
 {
   float x = 0.0F;
@@ -15,7 +14,7 @@ struct Vec3
 
 struct Material
 {
-  Vec3 albedo{1.0F, 1.0F, 1.0F};
+  Vec3 albedo{ 1.0F, 1.0F, 1.0F };
   Vec3 emission{};
   float roughness = 1.0F;
 };
@@ -44,4 +43,4 @@ private:
 };
 
 [[nodiscard]] Scene make_procedural_scene();
-}
+}// namespace vulkan_rt::scene

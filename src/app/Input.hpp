@@ -2,8 +2,7 @@
 
 #include <SDL3/SDL.h>
 
-namespace vulkan_rt::app
-{
+namespace vulkan_rt::app {
 class Input
 {
 public:
@@ -23,4 +22,4 @@ private:
   float mouse_delta_x_ = 0.0F;
   float mouse_delta_y_ = 0.0F;
 };
-}
+}// namespace vulkan_rt::app

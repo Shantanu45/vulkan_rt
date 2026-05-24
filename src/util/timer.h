@@ -2,44 +2,44 @@
 
 #include <stdint.h>
 
-namespace Util
+namespace Util {
+class FrameTimer
 {
-	class FrameTimer
-	{
-	public:
-		FrameTimer();
+public:
+  FrameTimer();
 
-		void reset();
-		double frame();
-		double frame(double frame_time);
-		double get_elapsed() const;
-		double get_frame_time() const;
+  void reset();
+  double frame();
+  double frame(double frame_time);
+  double get_elapsed() const;
+  double get_frame_time() const;
 
-		void enter_idle();
-		void leave_idle();
+  void enter_idle();
+  void leave_idle();
 
-		double get_fps() const;
+  double get_fps() const;
 
-		double get_fps_avg() const;
-	private:
-		int64_t start;
-		int64_t last;
-		int64_t last_period;
-		int64_t idle_start;
-		int64_t idle_time;
-		int64_t get_time();
-	};
+  double get_fps_avg() const;
 
-	class Timer
-	{
-	public:
-		void start();
-		double end();
+private:
+  int64_t start;
+  int64_t last;
+  int64_t last_period;
+  int64_t idle_start;
+  int64_t idle_time;
+  int64_t get_time();
+};
 
-	private:
-		int64_t t = 0;
-	};
+class Timer
+{
+public:
+  void start();
+  double end();
 
-	int64_t get_current_time_nsecs();
-	int64_t get_current_time_usec();
-}
+private:
+  int64_t t = 0;
+};
+
+int64_t get_current_time_nsecs();
+int64_t get_current_time_usec();
+}// namespace Util

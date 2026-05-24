@@ -1,34 +1,28 @@
 #include "app/Application.hpp"
 
+#include "util/logger.h"
 #include <SDL3/SDL.h>
 #include <fmt/format.h>
 #include <internal_use_only/config.hpp>
-#include "util/logger.h"
 
 #include <stdexcept>
 #include <string>
 #include <utility>
 
-namespace vulkan_rt::app
-{
+namespace vulkan_rt::app {
 SdlRuntime::SdlRuntime()
 {
-  if(!SDL_Init(SDL_INIT_VIDEO)) { throw std::runtime_error(std::string{"SDL_Init failed: "} + SDL_GetError()); }
+  if (!SDL_Init(SDL_INIT_VIDEO)) { throw std::runtime_error(std::string{ "SDL_Init failed: " } + SDL_GetError()); }
 }
 
-SdlRuntime::~SdlRuntime()
-{
-  SDL_Quit();
-}
+SdlRuntime::~SdlRuntime() { SDL_Quit(); }
 
 Application::Application(AppConfig config)
-  : config_(std::move(config))
-  , sdl_runtime_()
-  , window_(fmt::format("{} {}", vulkan_rt::cmake::project_name, vulkan_rt::cmake::project_version),
+  : config_(std::move(config)), sdl_runtime_(),
+    window_(fmt::format("{} {}", vulkan_rt::cmake::project_name, vulkan_rt::cmake::project_version),
       config_.width,
-      config_.height)
-  , engine_(engine::make_engine_config(config_))
-  , previous_frame_time_(Clock::now())
+      config_.height),
+    engine_(engine::make_engine_config(config_)), previous_frame_time_(Clock::now())
 {
   LOGI("Created SDL3 application window: {}x{}", config_.width, config_.height);
   const auto extent = window_.framebuffer_extent();
@@ -39,8 +33,7 @@ Application::~Application() = default;
 
 int Application::run()
 {
-  while(!window_.should_close())
-  {
+  while (!window_.should_close()) {
     const auto now = Clock::now();
     const std::chrono::duration<double> delta = now - previous_frame_time_;
     previous_frame_time_ = now;
@@ -77,12 +70,11 @@ void Application::tick_once(double delta_seconds)
   ui_.draw(make_ui_stats(engine_.frame_stats(), window_.framebuffer_extent()));
   ui_.end_frame();
 
-  if(window_.was_resized())
-  {
+  if (window_.was_resized()) {
     const auto extent = window_.framebuffer_extent();
     LOGD("Window resized: {}x{}", extent.width, extent.height);
     engine_.resize(extent.width, extent.height);
     window_.clear_resize_flag();
   }
 }
-}
+}// namespace vulkan_rt::app

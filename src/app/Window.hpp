@@ -4,8 +4,7 @@
 
 #include <string_view>
 
-namespace vulkan_rt::app
-{
+namespace vulkan_rt::app {
 struct Extent
 {
   int width = 0;
@@ -40,4 +39,4 @@ private:
   bool should_close_ = false;
   bool resized_ = false;
 };
-}
+}// namespace vulkan_rt::app

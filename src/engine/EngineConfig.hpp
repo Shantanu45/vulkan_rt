@@ -4,8 +4,7 @@
 
 #include <string>
 
-namespace vulkan_rt::engine
-{
+namespace vulkan_rt::engine {
 struct EngineConfig
 {
   bool validation = false;
@@ -14,4 +13,4 @@ struct EngineConfig
 };
 
 [[nodiscard]] EngineConfig make_engine_config(const app::AppConfig &config);
-}
+}// namespace vulkan_rt::engine

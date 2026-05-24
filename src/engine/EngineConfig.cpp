@@ -1,7 +1,6 @@
 #include "engine/EngineConfig.hpp"
 
-namespace vulkan_rt::engine
-{
+namespace vulkan_rt::engine {
 EngineConfig make_engine_config(const app::AppConfig &config)
 {
   EngineConfig engine_config;
@@ -10,4 +9,4 @@ EngineConfig make_engine_config(const app::AppConfig &config)
   engine_config.scene = config.scene;
   return engine_config;
 }
-}
+}// namespace vulkan_rt::engine

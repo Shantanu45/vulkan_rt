@@ -6,15 +6,12 @@
 #include <memory>
 #include <utility>
 
-namespace vulkan_rt::engine
-{
+namespace vulkan_rt::engine {
 Engine::Engine(EngineConfig config)
-  : config_(std::move(config))
-  , scene_(scene::make_procedural_scene())
-  , renderer_(std::make_unique<render::NullRenderer>())
+  : config_(std::move(config)), scene_(scene::make_procedural_scene()),
+    renderer_(std::make_unique<render::NullRenderer>())
 {
-  LOGD(
-    "Engine initialized: validation={}, gpu={}, scene={}", config_.validation, config_.gpu_index, config_.scene);
+  LOGD("Engine initialized: validation={}, gpu={}, scene={}", config_.validation, config_.gpu_index, config_.scene);
   LOGD("Scene initialized: materials={}, triangles={}", scene_.materials().size(), scene_.triangles().size());
 }
 
@@ -28,11 +25,12 @@ void Engine::update(double delta_seconds)
 
 void Engine::render()
 {
-  renderer_->render(render::RenderFrameInfo{
-                     .frame_index = frame_stats_.frame_index,
-                     .frame_time_ms = frame_stats_.frame_time_ms,
-                     .fps = frame_stats_.fps,
-                   },
+  renderer_->render(
+    render::RenderFrameInfo{
+      .frame_index = frame_stats_.frame_index,
+      .frame_time_ms = frame_stats_.frame_time_ms,
+      .fps = frame_stats_.fps,
+    },
     scene_,
     camera_);
   ++frame_stats_.frame_index;
@@ -44,23 +42,11 @@ void Engine::resize(int width, int height)
   renderer_->resize(width, height);
 }
 
-const FrameStats &Engine::frame_stats() const
-{
-  return frame_stats_;
-}
+const FrameStats &Engine::frame_stats() const { return frame_stats_; }
 
-const EngineConfig &Engine::config() const
-{
-  return config_;
-}
+const EngineConfig &Engine::config() const { return config_; }
 
-const scene::Scene &Engine::scene() const
-{
-  return scene_;
-}
+const scene::Scene &Engine::scene() const { return scene_; }
 
-const scene::Camera &Engine::camera() const
-{
-  return camera_;
-}
-}
+const scene::Camera &Engine::camera() const { return camera_; }
+}// namespace vulkan_rt::engine

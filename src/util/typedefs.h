@@ -35,17 +35,17 @@
  */
 
 // IWYU pragma: always_keep
-  
+
 // Ensure that C++ standard is at least C++17.
 // If on MSVC, also ensures that the `Zc:__cplusplus` flag is present.
 // TODO:
-//static_assert(__cplusplus >= 201703L, "Minimum of C++17 required.");
+// static_assert(__cplusplus >= 201703L, "Minimum of C++17 required.");
 
 // IWYU pragma: begin_exports
 
 // Include first in case the platform needs to pre-define/include some things.
 // TODO:
-//#include "platform_config.h"
+// #include "platform_config.h"
 
 // Should be available everywhere.
 #include "error_list.h"
@@ -135,36 +135,22 @@
 #undef MAX
 #undef CLAMP
 
-template <typename T>
-constexpr const T SIGN(const T m_v) {
-	return m_v > 0 ? +1.0f : (m_v < 0 ? -1.0f : 0.0f);
-}
+template<typename T> constexpr const T SIGN(const T m_v) { return m_v > 0 ? +1.0f : (m_v < 0 ? -1.0f : 0.0f); }
 
-template <typename T, typename T2>
-constexpr auto MIN(const T m_a, const T2 m_b) {
-	return m_a < m_b ? m_a : m_b;
-}
+template<typename T, typename T2> constexpr auto MIN(const T m_a, const T2 m_b) { return m_a < m_b ? m_a : m_b; }
 
-template <typename T, typename T2>
-constexpr auto MAX(const T m_a, const T2 m_b) {
-	return m_a > m_b ? m_a : m_b;
-}
+template<typename T, typename T2> constexpr auto MAX(const T m_a, const T2 m_b) { return m_a > m_b ? m_a : m_b; }
 
-template <typename T, typename T2, typename T3>
-constexpr auto CLAMP(const T m_a, const T2 m_min, const T3 m_max) {
-	return m_a < m_min ? m_min : (m_a > m_max ? m_max : m_a);
-}
+template<typename T, typename T2, typename T3> constexpr auto CLAMP(const T m_a, const T2 m_min, const T3 m_max)
+{ return m_a < m_min ? m_min : (m_a > m_max ? m_max : m_a); }
 
 // Like std::size, but without requiring any additional includes.
-template <typename T, size_t SIZE>
-constexpr size_t std_size(const T (&)[SIZE]) {
-	return SIZE;
-}
+template<typename T, size_t SIZE> constexpr size_t std_size(const T (&)[SIZE]) { return SIZE; }
 
 // Generic swap template.
 #ifndef SWAP
 #define SWAP(m_x, m_y) std::swap((m_x), (m_y))
-#endif // SWAP
+#endif// SWAP
 
 // Swap 16, 32 and 64 bits value for endianness.
 #if defined(__GNUC__)
@@ -176,35 +162,34 @@ constexpr size_t std_size(const T (&)[SIZE]) {
 #define BSWAP32(x) _byteswap_ulong(x)
 #define BSWAP64(x) _byteswap_uint64(x)
 #else
-static inline uint16_t BSWAP16(uint16_t x) {
-	return (x >> 8) | (x << 8);
-}
+static inline uint16_t BSWAP16(uint16_t x) { return (x >> 8) | (x << 8); }
 
-static inline uint32_t BSWAP32(uint32_t x) {
-	return ((x << 24) | ((x << 8) & 0x00FF0000) | ((x >> 8) & 0x0000FF00) | (x >> 24));
-}
+static inline uint32_t BSWAP32(uint32_t x)
+{ return ((x << 24) | ((x << 8) & 0x00FF0000) | ((x >> 8) & 0x0000FF00) | (x >> 24)); }
 
-static inline uint64_t BSWAP64(uint64_t x) {
-	x = (x & 0x00000000FFFFFFFF) << 32 | (x & 0xFFFFFFFF00000000) >> 32;
-	x = (x & 0x0000FFFF0000FFFF) << 16 | (x & 0xFFFF0000FFFF0000) >> 16;
-	x = (x & 0x00FF00FF00FF00FF) << 8 | (x & 0xFF00FF00FF00FF00) >> 8;
-	return x;
+static inline uint64_t BSWAP64(uint64_t x)
+{
+  x = (x & 0x00000000FFFFFFFF) << 32 | (x & 0xFFFFFFFF00000000) >> 32;
+  x = (x & 0x0000FFFF0000FFFF) << 16 | (x & 0xFFFF0000FFFF0000) >> 16;
+  x = (x & 0x00FF00FF00FF00FF) << 8 | (x & 0xFF00FF00FF00FF00) >> 8;
+  return x;
 }
 #endif
 
 // Generic comparator used in Map, List, etc.
-template <typename T>
-struct Comparator {
-	_ALWAYS_INLINE_ bool operator()(const T &p_a, const T &p_b) const { return (p_a < p_b); }
+template<typename T> struct Comparator
+{
+  _ALWAYS_INLINE_ bool operator()(const T &p_a, const T &p_b) const { return (p_a < p_b); }
 };
 
 // Global lock macro, relies on the static Mutex::_global_mutex.
 void _global_lock();
 void _global_unlock();
 
-struct _GlobalLock {
-	_GlobalLock() { _global_lock(); }
-	~_GlobalLock() { _global_unlock(); }
+struct _GlobalLock
+{
+  _GlobalLock() { _global_lock(); }
+  ~_GlobalLock() { _global_unlock(); }
 };
 
 #define GLOBAL_LOCK_FUNCTION _GlobalLock _global_lock_;
@@ -231,14 +216,17 @@ struct _GlobalLock {
 
 // Home-made index sequence trick, so it can be used everywhere without the costly include of std::tuple.
 // https://stackoverflow.com/questions/15014096/c-index-of-type-during-variadic-template-expansion
-template <size_t... Is>
-struct IndexSequence {};
+template<size_t... Is> struct IndexSequence
+{
+};
 
-template <size_t N, size_t... Is>
-struct BuildIndexSequence : BuildIndexSequence<N - 1, N - 1, Is...> {};
+template<size_t N, size_t... Is> struct BuildIndexSequence : BuildIndexSequence<N - 1, N - 1, Is...>
+{
+};
 
-template <size_t... Is>
-struct BuildIndexSequence<0, Is...> : IndexSequence<Is...> {};
+template<size_t... Is> struct BuildIndexSequence<0, Is...> : IndexSequence<Is...>
+{
+};
 
 // Limit the depth of recursive algorithms when dealing with Array/Dictionary
 #define MAX_RECURSION 100
@@ -253,20 +241,23 @@ struct BuildIndexSequence<0, Is...> : IndexSequence<Is...> {};
 // Whether the default value of a type is just all-0 bytes.
 // This can most commonly be exploited by using memset for these types instead of loop-construct.
 // Trivially constructible types are also zero-constructible.
-template <typename T>
-struct is_zero_constructible : std::is_trivially_constructible<T> {};
+template<typename T> struct is_zero_constructible : std::is_trivially_constructible<T>
+{
+};
 
-template <typename T>
-struct is_zero_constructible<const T> : is_zero_constructible<T> {};
+template<typename T> struct is_zero_constructible<const T> : is_zero_constructible<T>
+{
+};
 
-template <typename T>
-struct is_zero_constructible<volatile T> : is_zero_constructible<T> {};
+template<typename T> struct is_zero_constructible<volatile T> : is_zero_constructible<T>
+{
+};
 
-template <typename T>
-struct is_zero_constructible<const volatile T> : is_zero_constructible<T> {};
+template<typename T> struct is_zero_constructible<const volatile T> : is_zero_constructible<T>
+{
+};
 
-template <typename T>
-inline constexpr bool is_zero_constructible_v = is_zero_constructible<T>::value;
+template<typename T> inline constexpr bool is_zero_constructible_v = is_zero_constructible<T>::value;
 
 // Warning suppression helper macros.
 #if defined(__clang__)
@@ -311,22 +302,25 @@ inline constexpr bool is_zero_constructible_v = is_zero_constructible<T>::value;
 #define GODOT_MSVC_WARNING_PUSH_AND_IGNORE(m_warning)
 #endif
 
-template <typename T, typename = void>
-struct is_fully_defined : std::false_type {};
+template<typename T, typename = void> struct is_fully_defined : std::false_type
+{
+};
 
-template <typename T>
-struct is_fully_defined<T, std::void_t<decltype(sizeof(T))>> : std::true_type {};
+template<typename T> struct is_fully_defined<T, std::void_t<decltype(sizeof(T))>> : std::true_type
+{
+};
 
-template <typename T>
-constexpr bool is_fully_defined_v = is_fully_defined<T>::value;
+template<typename T> constexpr bool is_fully_defined_v = is_fully_defined<T>::value;
 
 #ifndef SCU_BUILD_ENABLED
 /// Enforces the requirement that a class is not fully defined.
 /// This can be used to reduce include coupling and keep compile times low.
 /// The check must be made at the top of the corresponding .cpp file of a header.
-#define STATIC_ASSERT_INCOMPLETE_TYPE(m_keyword, m_type) \
-	m_keyword m_type; \
-	static_assert(!is_fully_defined_v<m_type>, #m_type " was unexpectedly fully defined. Please check the include hierarchy of '" __FILE__ "' and remove includes that resolve the " #m_keyword ".");
+#define STATIC_ASSERT_INCOMPLETE_TYPE(m_keyword, m_type)                                        \
+  m_keyword m_type;                                                                             \
+  static_assert(!is_fully_defined_v<m_type>,                                                    \
+    #m_type " was unexpectedly fully defined. Please check the include hierarchy of '" __FILE__ \
+            "' and remove includes that resolve the " #m_keyword ".");
 #else
 #define STATIC_ASSERT_INCOMPLETE_TYPE(m_keyword, m_type)
 #endif

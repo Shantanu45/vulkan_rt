@@ -2,8 +2,7 @@
 
 #include "scene/Scene.hpp"
 
-namespace vulkan_rt::scene
-{
+namespace vulkan_rt::scene {
 class Camera
 {
 public:
@@ -28,7 +27,7 @@ public:
   [[nodiscard]] Vec3 up_direction() const;
 
 private:
-  Vec3 position_{0.0F, 0.0F, 3.0F};
+  Vec3 position_{ 0.0F, 0.0F, 3.0F };
   float yaw_degrees_ = -90.0F;
   float pitch_degrees_ = 0.0F;
   float vertical_fov_degrees_ = 45.0F;
@@ -36,4 +35,4 @@ private:
   float near_plane_ = 0.01F;
   float far_plane_ = 1000.0F;
 };
-}
+}// namespace vulkan_rt::scene

@@ -6,34 +6,32 @@
 
 #include <cstdlib>
 
-namespace vulkan_rt::app
-{
+namespace vulkan_rt::app {
 AppConfig parse_app_config(int argc, char **argv)
 {
   AppConfig config;
 
-  CLI::App cli{fmt::format("{} desktop application", vulkan_rt::cmake::project_name)};
-  cli.set_version_flag("--version", std::string{vulkan_rt::cmake::project_version});
+  CLI::App cli{ fmt::format("{} desktop application", vulkan_rt::cmake::project_name) };
+  cli.set_version_flag("--version", std::string{ vulkan_rt::cmake::project_version });
 
   cli.add_flag("-v,--verbose", config.verbose, "Enable verbose logging");
   cli.add_option("--width", config.width, "Window width")->check(CLI::PositiveNumber);
   cli.add_option("--height", config.height, "Window height")->check(CLI::PositiveNumber);
   cli.add_flag("--validation", config.validation, "Enable Vulkan validation when the renderer is available");
   cli.add_option("--gpu", config.gpu_index, "Requested GPU index; -1 selects the default device");
-  cli.add_option("--scene", config.scene, "Scene source to load")->check(CLI::IsMember({"procedural"}));
+  cli.add_option("--scene", config.scene, "Scene source to load")->check(CLI::IsMember({ "procedural" }));
   cli.add_flag("--dry-run-config", config.dry_run_config, "Validate CLI configuration without opening a window");
   cli.add_flag("--app-smoke", config.app_smoke, "Create the SDL application shell, tick once, and exit");
-  cli.add_flag("--check-vulkan", config.check_vulkan, "Reports if Vulkan loader is preset, instance can be created, validation availability and physical devices.");
+  cli.add_flag("--check-vulkan",
+    config.check_vulkan,
+    "Reports if Vulkan loader is preset, instance can be created, validation availability and physical devices.");
 
-  try
-  {
+  try {
     cli.parse(argc, argv);
-  }
-  catch(const CLI::ParseError &error)
-  {
+  } catch (const CLI::ParseError &error) {
     std::exit(cli.exit(error));
   }
 
   return config;
 }
-}
+}// namespace vulkan_rt::app

@@ -8,8 +8,7 @@
 
 #include <memory>
 
-namespace vulkan_rt::engine
-{
+namespace vulkan_rt::engine {
 class Engine
 {
 public:
@@ -32,4 +31,4 @@ private:
   scene::Camera camera_;
   std::unique_ptr<render::Renderer> renderer_;
 };
-}
+}// namespace vulkan_rt::engine

@@ -5,8 +5,7 @@
 
 #include <cstdint>
 
-namespace vulkan_rt::app
-{
+namespace vulkan_rt::app {
 struct UiStats
 {
   double frame_time_ms = 0.0;
@@ -29,4 +28,4 @@ public:
 private:
   UiStats last_stats_ = {};
 };
-}
+}// namespace vulkan_rt::app

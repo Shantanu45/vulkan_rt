@@ -8,8 +8,7 @@
 
 #include <chrono>
 
-namespace vulkan_rt::app
-{
+namespace vulkan_rt::app {
 class SdlRuntime
 {
 public:
@@ -49,4 +48,4 @@ private:
   UiLayer ui_;
   Clock::time_point previous_frame_time_;
 };
-}
+}// namespace vulkan_rt::app

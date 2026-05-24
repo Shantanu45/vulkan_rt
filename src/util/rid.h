@@ -30,58 +30,50 @@
 
 #pragma once
 
-#include "util/typedefs.h"
 #include "hash_func.h"
+#include "util/typedefs.h"
 
 class RID_AllocBase;
 
-class RID {
-	friend class RID_AllocBase;
-	uint64_t _id = 0;
+class RID
+{
+  friend class RID_AllocBase;
+  uint64_t _id = 0;
 
 public:
-	_ALWAYS_INLINE_ bool operator==(const RID &p_rid) const {
-		return _id == p_rid._id;
-	}
-	_ALWAYS_INLINE_ bool operator<(const RID &p_rid) const {
-		return _id < p_rid._id;
-	}
-	_ALWAYS_INLINE_ bool operator<=(const RID &p_rid) const {
-		return _id <= p_rid._id;
-	}
-	_ALWAYS_INLINE_ bool operator>(const RID &p_rid) const {
-		return _id > p_rid._id;
-	}
-	_ALWAYS_INLINE_ bool operator>=(const RID &p_rid) const {
-		return _id >= p_rid._id;
-	}
-	_ALWAYS_INLINE_ bool operator!=(const RID &p_rid) const {
-		return _id != p_rid._id;
-	}
-	_ALWAYS_INLINE_ bool is_valid() const { return _id != 0; }
-	_ALWAYS_INLINE_ bool is_null() const { return _id == 0; }
+  _ALWAYS_INLINE_ bool operator==(const RID &p_rid) const { return _id == p_rid._id; }
+  _ALWAYS_INLINE_ bool operator<(const RID &p_rid) const { return _id < p_rid._id; }
+  _ALWAYS_INLINE_ bool operator<=(const RID &p_rid) const { return _id <= p_rid._id; }
+  _ALWAYS_INLINE_ bool operator>(const RID &p_rid) const { return _id > p_rid._id; }
+  _ALWAYS_INLINE_ bool operator>=(const RID &p_rid) const { return _id >= p_rid._id; }
+  _ALWAYS_INLINE_ bool operator!=(const RID &p_rid) const { return _id != p_rid._id; }
+  _ALWAYS_INLINE_ bool is_valid() const { return _id != 0; }
+  _ALWAYS_INLINE_ bool is_null() const { return _id == 0; }
 
-	_ALWAYS_INLINE_ uint32_t get_local_index() const { return _id & 0xFFFFFFFF; }
+  _ALWAYS_INLINE_ uint32_t get_local_index() const { return _id & 0xFFFFFFFF; }
 
-	static _ALWAYS_INLINE_ RID from_uint64(uint64_t p_id) {
-		RID _rid;
-		_rid._id = p_id;
-		return _rid;
-	}
-	_ALWAYS_INLINE_ uint64_t get_id() const { return _id; }
+  static _ALWAYS_INLINE_ RID from_uint64(uint64_t p_id)
+  {
+    RID _rid;
+    _rid._id = p_id;
+    return _rid;
+  }
+  _ALWAYS_INLINE_ uint64_t get_id() const { return _id; }
 
-	uint32_t hash() const { return hash_xxhash_one_64(_id); }
+  uint32_t hash() const { return hash_xxhash_one_64(_id); }
 };
 
 // needed for hash based library data structures to work.
 namespace std {
-	template<>
-	struct hash<RID> {
-		size_t operator()(const RID& r) const noexcept {
-			return r.hash();   // call your member hash
-		}
-	};
-}
+template<> struct hash<RID>
+{
+  size_t operator()(const RID &r) const noexcept
+  {
+    return r.hash();// call your member hash
+  }
+};
+}// namespace std
 
-template <>
-struct is_zero_constructible<RID> : std::true_type {};
+template<> struct is_zero_constructible<RID> : std::true_type
+{
+};

@@ -5,8 +5,7 @@
 
 #include <cstdint>
 
-namespace vulkan_rt::render
-{
+namespace vulkan_rt::render {
 struct RenderFrameInfo
 {
   std::uint64_t frame_index = 0;
@@ -23,4 +22,4 @@ public:
   virtual void resize(int width, int height) = 0;
   virtual void wait_idle() = 0;
 };
-}
+}// namespace vulkan_rt::render

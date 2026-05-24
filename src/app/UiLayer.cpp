@@ -1,7 +1,6 @@
 #include "app/UiLayer.hpp"
 
-namespace vulkan_rt::app
-{
+namespace vulkan_rt::app {
 UiStats make_ui_stats(const engine::FrameStats &frame_stats, Extent framebuffer_extent)
 {
   UiStats stats;
@@ -14,15 +13,9 @@ UiStats make_ui_stats(const engine::FrameStats &frame_stats, Extent framebuffer_
 
 void UiLayer::begin_frame() {}
 
-void UiLayer::draw(const UiStats &stats)
-{
-  last_stats_ = stats;
-}
+void UiLayer::draw(const UiStats &stats) { last_stats_ = stats; }
 
 void UiLayer::end_frame() {}
 
-const UiStats &UiLayer::last_stats() const
-{
-  return last_stats_;
-}
-}
+const UiStats &UiLayer::last_stats() const { return last_stats_; }
+}// namespace vulkan_rt::app

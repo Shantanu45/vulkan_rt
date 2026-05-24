@@ -11,16 +11,24 @@
 #pragma once
 #include "../Renderer.hpp"
 
+
 namespace vulkan_rt::render {
 class VulkanRenderer final : public Renderer
 {
+public:
   VulkanRenderer();
-  virtual ~VulkanRenderer();
+  virtual ~VulkanRenderer() override;
 
   void render(const RenderFrameInfo &frame_info, const scene::Scene &scene, const scene::Camera &camera) override;
 
   void resize(int width, int height) override;
 
   void wait_idle() override;
+
+private:
+  VulkanContext context_;
+  VulkanDevice device_;
+  VulkanSwapchain swapchain_;
+  VulkanFrameResources frames_;
 };
 }// namespace vulkan_rt::render

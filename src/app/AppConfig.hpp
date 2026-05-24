@@ -2,8 +2,7 @@
 
 #include <string>
 
-namespace vulkan_rt::app
-{
+namespace vulkan_rt::app {
 struct AppConfig
 {
   int width = 1280;
@@ -18,4 +17,4 @@ struct AppConfig
 };
 
 AppConfig parse_app_config(int argc, char **argv);
-}
+}// namespace vulkan_rt::app
