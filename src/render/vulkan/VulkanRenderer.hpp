@@ -10,7 +10,10 @@
  *********************************************************************/
 #pragma once
 #include "../Renderer.hpp"
-
+#include "VulkanContext.hpp"
+#include "VulkanDevice.hpp"
+#include "VulkanSwapchain.hpp"
+#include "VulkanFrameResources.hpp"
 
 namespace vulkan_rt::render {
 class VulkanRenderer final : public Renderer
