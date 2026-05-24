@@ -62,6 +62,8 @@ set(vulkan
 source_group("render/vulkan" FILES ${vulkan})
 
 set(scene
+    scene/Camera.cpp
+    scene/Camera.hpp
     scene/Scene.cpp
     scene/Scene.hpp
 )

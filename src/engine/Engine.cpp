@@ -1,7 +1,6 @@
 #include "engine/Engine.hpp"
 
 #include "render/NullRenderer.hpp"
-#include "scene/Scene.hpp"
 #include "util/logger.h"
 
 #include <memory>
@@ -39,6 +38,7 @@ void Engine::render()
 
 void Engine::resize(int width, int height)
 {
+  camera_.set_viewport_size(width, height);
   renderer_->resize(width, height);
 }
 
@@ -55,5 +55,10 @@ const EngineConfig &Engine::config() const
 const scene::Scene &Engine::scene() const
 {
   return scene_;
+}
+
+const scene::Camera &Engine::camera() const
+{
+  return camera_;
 }
 }

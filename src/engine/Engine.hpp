@@ -3,6 +3,7 @@
 #include "engine/EngineConfig.hpp"
 #include "engine/FrameStats.hpp"
 #include "render/Renderer.hpp"
+#include "scene/Camera.hpp"
 #include "scene/Scene.hpp"
 
 #include <memory>
@@ -22,11 +23,13 @@ public:
   [[nodiscard]] const FrameStats &frame_stats() const;
   [[nodiscard]] const EngineConfig &config() const;
   [[nodiscard]] const scene::Scene &scene() const;
+  [[nodiscard]] const scene::Camera &camera() const;
 
 private:
   EngineConfig config_;
   FrameStats frame_stats_;
   scene::Scene scene_;
+  scene::Camera camera_;
   std::unique_ptr<render::Renderer> renderer_;
 };
 }

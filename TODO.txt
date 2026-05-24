@@ -64,7 +64,8 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [ ] Expand Renderer to accept scene and camera data once those systems exist.
 - [x] Add Scene for CPU-side geometry, material, and light data for V1
       procedural content.
-- [ ] Add Camera with position, orientation, FOV, and input-driven update.
+- [x] Add Camera with position, orientation, FOV, and viewport aspect.
+- [ ] Add input-driven camera update.
 - [ ] Report fatal setup failures with clear messages.
 - [ ] Detect and report missing ray tracing extension support.
 - [ ] Detect and report missing acceleration structure support.
@@ -80,6 +81,8 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
       where practical.
 - [x] Test that the procedural scene builder produces valid geometry and
       material ranges.
+- [x] Test camera defaults, viewport aspect updates, movement, and direction
+      vector normalization.
 - [ ] Test that shader manifest/custom command paths are generated as expected.
 - [ ] Add CTest smoke test for vulkan_rt --help.
 - [ ] Add CTest smoke test for vulkan_rt --version.

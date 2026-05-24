@@ -31,6 +31,8 @@ Application::Application(AppConfig config)
   , previous_frame_time_(Clock::now())
 {
   LOGI("Created SDL3 application window: {}x{}", config_.width, config_.height);
+  const auto extent = window_.framebuffer_extent();
+  engine_.resize(extent.width, extent.height);
 }
 
 Application::~Application() = default;
