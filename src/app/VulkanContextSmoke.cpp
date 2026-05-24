@@ -5,6 +5,7 @@
 #include "app/Window.hpp"
 #include "render/vulkan/VulkanContext.hpp"
 #include "render/vulkan/VulkanDevice.hpp"
+#include "render/vulkan/VulkanFrameResources.hpp"
 #include "render/vulkan/VulkanRendererConfig.hpp"
 #include "render/vulkan/VulkanSwapchain.hpp"
 #include "util/logger.h"
@@ -106,6 +107,48 @@ int vulkan_swapchain_smoke_test(const AppConfig &config)
   LOGI("  image view count: {}", swapchain.image_views().size());
   LOGI("  image format: {}", static_cast<int>(swapchain.image_format()));
   LOGI("  extent: {}x{}", swapchain.extent().width, swapchain.extent().height);
+
+  device.wait_idle();
+  return 0;
+}
+
+int vulkan_frame_smoke_test(const AppConfig &config)
+{
+  SdlRuntime sdl_runtime;
+  Window window{
+    fmt::format("{} Vulkan frame smoke", vulkan_rt::cmake::project_name),
+    config.width,
+    config.height,
+  };
+
+  SdlSurfaceProvider surface_provider{window.native_handle()};
+  const std::string application_name{vulkan_rt::cmake::project_name};
+  render::vulkan::VulkanRendererConfig vulkan_config{
+    .validation = config.validation,
+    .application_name = application_name.c_str(),
+    .gpu_index = config.gpu_index,
+  };
+
+  render::vulkan::VulkanContext context{vulkan_config, surface_provider};
+  render::vulkan::VulkanDevice device{context, vulkan_config};
+  render::vulkan::VulkanSwapchain swapchain{
+    context,
+    device,
+    render::vulkan::SwapchainExtent{
+      .width = static_cast<std::uint32_t>(config.width),
+      .height = static_cast<std::uint32_t>(config.height),
+    },
+  };
+  render::vulkan::VulkanFrameResources frames{device, 2};
+
+  LOGI("Vulkan frame resources smoke passed:");
+  LOGI("  frames in flight: {}", frames.frames_in_flight());
+  LOGI("  command pool created: {}", frames.command_pool() != VK_NULL_HANDLE);
+  LOGI("  command buffers: {}", frames.command_buffers().size());
+  LOGI("  image available semaphores: {}", frames.image_available_semaphores().size());
+  LOGI("  render finished semaphores: {}", frames.render_finished_semaphores().size());
+  LOGI("  fences: {}", frames.in_flight_fences().size());
+  LOGI("  swapchain images available: {}", swapchain.images().size());
 
   device.wait_idle();
   return 0;

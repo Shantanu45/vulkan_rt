@@ -7,6 +7,7 @@ VulkanRenderer::VulkanRenderer(const VulkanRendererConfig &config, const Surface
   : context_(config, surface_provider)
   , device_(context_, config)
   , swapchain_(context_, device_, SwapchainExtent{.width = 1280, .height = 720})
+  , frames_(device_, 2)
 {
 }
 

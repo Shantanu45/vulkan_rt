@@ -56,6 +56,10 @@ int main(int argc, char **argv)
     return vulkan_rt::app::vulkan_swapchain_smoke_test(config);
   }
 
+  if (config.vulkan_frame_smoke) {
+    return vulkan_rt::app::vulkan_frame_smoke_test(config);
+  }
+
   const bool app_smoke = config.app_smoke;
   vulkan_rt::app::Application application{ std::move(config) };
   if (app_smoke) { return application.smoke_test(); }
