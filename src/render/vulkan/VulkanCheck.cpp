@@ -8,9 +8,49 @@
 
 namespace vulkan_rt::render::vulkan
 {
+struct Vendor
+{
+  constexpr static uint32_t VENDOR_UNKNOWN = 0x0;
+  constexpr static uint32_t VENDOR_AMD = 0x1002;
+  constexpr static uint32_t VENDOR_IMGTEC = 0x1010;
+  constexpr static uint32_t VENDOR_APPLE = 0x106B;
+  constexpr static uint32_t VENDOR_NVIDIA = 0x10DE;
+  constexpr static uint32_t VENDOR_ARM = 0x13B5;
+  constexpr static uint32_t VENDOR_MICROSOFT = 0x1414;
+  constexpr static uint32_t VENDOR_QUALCOMM = 0x5143;
+  constexpr static uint32_t VENDOR_INTEL = 0x8086;
+};
+
+enum DeviceType {
+  DEVICE_TYPE_OTHER = 0x0,
+  DEVICE_TYPE_INTEGRATED_GPU = 0x1,
+  DEVICE_TYPE_DISCRETE_GPU = 0x2,
+  DEVICE_TYPE_VIRTUAL_GPU = 0x3,
+  DEVICE_TYPE_CPU = 0x4,
+  DEVICE_TYPE_MAX = 0x5
+};
+
+struct Device
+{
+  std::string name = "Unknown";
+  uint32_t vendor = Vendor::VENDOR_UNKNOWN;
+  DeviceType type = DEVICE_TYPE_OTHER;
+};
+
+struct DeviceQueueFamilies
+{
+  std::vector<VkQueueFamilyProperties> properties;
+};
 uint32_t instance_api_version = VK_API_VERSION_1_0;
 std::unordered_map<std::string, bool> requested_instance_extensions;
 std::set<std::string> enabled_instance_extension_names;
+
+std::vector<Device> driver_devices;
+std::vector<VkPhysicalDevice> physical_devices;
+VkInstance instance = VK_NULL_HANDLE;
+std::vector<DeviceQueueFamilies> device_queue_families;
+
+VulkanCheckResult check_result{};
 
 Error _initialize_vulkan_version()
 {
@@ -44,6 +84,7 @@ Error _initializee_volk()
     LOGE("Failed to initialize Vulkan loader via volk.\n");
     return ERR_CANT_CREATE;
   }
+  check_result.loader_present = true;
   return OK;
 }
 
@@ -101,14 +142,120 @@ Error _validate_reqired_instance_extensions()
   return OK;
 }
 
+Error _create_vulkan_instance(const VkInstanceCreateInfo *p_create_info,
+  VkInstance *r_instance)
+{
+
+  VkResult err = vkCreateInstance(p_create_info, nullptr, r_instance);
+  ERR_FAIL_COND_V_MSG(err == VK_ERROR_INCOMPATIBLE_DRIVER,
+    ERR_CANT_CREATE,
+    "Cannot find a compatible Vulkan installable client driver (ICD).\n\n"
+    "vkCreateInstance Failure");
+  ERR_FAIL_COND_V_MSG(err == VK_ERROR_EXTENSION_NOT_PRESENT,
+    ERR_CANT_CREATE,
+    "Cannot find a specified extension library.\n"
+    "Make sure your layers path is set appropriately.\n"
+    "vkCreateInstance Failure");
+  ERR_FAIL_COND_V_MSG(err,
+    ERR_CANT_CREATE,
+    "vkCreateInstance failed.\n\n"
+    "Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
+    "Please look at the Getting Started guide for additional information.\n"
+    "vkCreateInstance Failure");
+
+  return OK;
+}
+
+Error _initialize_vulkan_instance()
+{
+  [[maybe_unused]] Error err;
+  std::vector<const char *> enabled_extension_names;
+  enabled_extension_names.reserve(enabled_instance_extension_names.size());
+  for (const std::string &extension_name : enabled_instance_extension_names) {
+    enabled_extension_names.push_back(extension_name.data());
+  }
+
+  std::vector<const char *> enabled_layer_names;
+  
+  #ifdef VULKAN_DEBUG
+    err = _find_validation_layers(enabled_layer_names);
+    ERR_FAIL_COND_V(err != OK, err);
+  #endif //VULKAN_DEBUG
+
+    VkInstanceCreateInfo instance_info = {};
+    instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+
+    instance_info.pApplicationInfo = nullptr;
+    instance_info.enabledExtensionCount = static_cast<uint32_t>(enabled_extension_names.size());
+    instance_info.ppEnabledExtensionNames = enabled_extension_names.data();
+    instance_info.enabledLayerCount = static_cast<uint32_t>(enabled_layer_names.size());
+    instance_info.ppEnabledLayerNames = enabled_layer_names.data();
+
+    // This is info for a temp callback to use during CreateInstance. After the instance is created, we use the
+    // instance-based function to register the final callback.
+    VkDebugUtilsMessengerCreateInfoEXT debug_messenger_create_info = {};
+    VkDebugReportCallbackCreateInfoEXT debug_report_callback_create_info = {};
+
+    if (instance == VK_NULL_HANDLE) {
+      if (_create_vulkan_instance(&instance_info, &instance) != OK) return FAILED;
+    }
+
+	volkLoadInstance(instance);
+    check_result.instance_created = true;
+    return OK;
+}
+
+Error _check_devices()
+{
+  uint32_t physical_device_count = 0;
+  VkResult err = vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
+  ERR_FAIL_COND_V(err != VK_SUCCESS, ERR_CANT_CREATE);
+  ERR_FAIL_COND_V_MSG(physical_device_count == 0,
+    ERR_CANT_CREATE,
+    "vkEnumeratePhysicalDevices reported zero accessible devices.\n\nDo you have a compatible Vulkan installable "
+    "client driver (ICD) installed?\nvkEnumeratePhysicalDevices Failure.");
+
+  driver_devices.resize(physical_device_count);
+  physical_devices.resize(physical_device_count);
+  device_queue_families.resize(physical_device_count);
+  err = vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices.data());
+  ERR_FAIL_COND_V(err != VK_SUCCESS, ERR_CANT_CREATE);
+
+  // Fill the list of driver devices with the properties from the physical devices.
+  for (uint32_t i = 0; i < physical_devices.size(); i++) {
+    VkPhysicalDeviceProperties props;
+    vkGetPhysicalDeviceProperties(physical_devices[i], &props);
+
+    Device &driver_device = driver_devices[i];
+    driver_device.name = std::string(props.deviceName);
+    driver_device.vendor = props.vendorID;
+    driver_device.type = DeviceType(props.deviceType);
+
+    // TODO:
+    //_check_driver_workarounds(props, driver_device);
+
+    uint32_t queue_family_properties_count = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(physical_devices[i], &queue_family_properties_count, nullptr);
+
+    if (queue_family_properties_count > 0) {
+      device_queue_families[i].properties.resize(queue_family_properties_count);
+      vkGetPhysicalDeviceQueueFamilyProperties(
+        physical_devices[i], &queue_family_properties_count, device_queue_families[i].properties.data());
+    }
+  }
+  check_result.physical_device_count = physical_devices.size();
+  return OK;
+}
 
 VulkanCheckResult check_vulkan([[maybe_unused]] bool request_validation)
 {
   _initializee_volk();
   _initialize_vulkan_version();
   _validate_reqired_instance_extensions();
+  _initialize_vulkan_instance();
+  _check_devices();
   // TODO
-  return VulkanCheckResult{};
+  return check_result;
 }
 
 }

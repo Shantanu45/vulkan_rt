@@ -23,13 +23,8 @@ struct VulkanCheckResult
   bool loader_present = false;
   bool instance_created = false;
   bool validation_layer_available = false;
-  uint32_t physical_device_count = 0;
-  std::string error = "";
+  size_t physical_device_count = 0;
 };
 
 VulkanCheckResult check_vulkan( bool request_validation);
-
-Error _initialize_vulkan_version();
-
-Error _initializee_volk();
 }

@@ -34,12 +34,11 @@ int main(int argc, char **argv)
   if (config.check_vulkan)
   { 
       auto result = vulkan_rt::render::vulkan::check_vulkan(true);
-      fmt::println("loader: {}, instance creation: {}, validation: {}, phsical device count: {} \n error?:{}",
-      result.loader_present,
-      result.instance_created,
-      result.validation_layer_available,
-      result.physical_device_count,
-      result.error);
+      LOGI("\n loader: %s,\n instance creation: %s,\n validation: %s,\n phsical device count: %zu\n",
+        result.loader_present ? "true" : "false",
+        result.instance_created ? "true" : "false",
+        result.validation_layer_available ? "true" : "false",
+        result.physical_device_count);
       return 0;
   }
 
