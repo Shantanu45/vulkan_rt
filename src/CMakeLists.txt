@@ -57,6 +57,7 @@ source_group("render" FILES ${render})
 set(vulkan
     render/vulkan/VulkanCheck.hpp
     render/vulkan/VulkanCheck.cpp
+    render/vulkan/VulkanRendererConfig.hpp
 )
 
 source_group("render/vulkan" FILES ${vulkan})
