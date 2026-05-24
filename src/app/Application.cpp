@@ -3,7 +3,6 @@
 #include <SDL3/SDL.h>
 #include <fmt/format.h>
 #include <internal_use_only/config.hpp>
-#include <spdlog/spdlog.h>
 #include "util/logger.h"
 
 #include <stdexcept>
@@ -31,7 +30,7 @@ Application::Application(AppConfig config)
   , engine_(engine::make_engine_config(config_))
   , previous_frame_time_(Clock::now())
 {
-  spdlog::info("Created SDL3 application window: {}x{}", config_.width, config_.height);
+  LOGI("Created SDL3 application window: {}x{}", config_.width, config_.height);
 }
 
 Application::~Application() = default;
@@ -61,7 +60,7 @@ int Application::smoke_test()
   tick_once(delta.count());
 
   const auto extent = window_.framebuffer_extent();
-  spdlog::info("Application smoke test passed: framebuffer {}x{}", extent.width, extent.height);
+  LOGI("Application smoke test passed: framebuffer {}x{}", extent.width, extent.height);
   return 0;
 }
 
