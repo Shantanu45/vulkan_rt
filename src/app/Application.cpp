@@ -101,19 +101,24 @@ void Application::tick_once(double delta_seconds)
 {
   window_.poll_events(input_);
 
+  const auto extent = window_.framebuffer_extent();
+  if(extent.width <= 0 || extent.height <= 0)
+  {
+    return;
+  }
+
+  if (window_.was_resized()) {
+    LOGD("Window resized: {}x{}", extent.width, extent.height);
+    engine_.resize(extent.width, extent.height);
+    window_.clear_resize_flag();
+  }
+
   engine_.update_camera(make_camera_control_input(input_), delta_seconds);
   engine_.update(delta_seconds);
   engine_.render();
 
   ui_.begin_frame();
-  ui_.draw(make_ui_stats(engine_.frame_stats(), window_.framebuffer_extent()));
+  ui_.draw(make_ui_stats(engine_.frame_stats(), extent));
   ui_.end_frame();
-
-  if (window_.was_resized()) {
-    const auto extent = window_.framebuffer_extent();
-    LOGD("Window resized: {}x{}", extent.width, extent.height);
-    engine_.resize(extent.width, extent.height);
-    window_.clear_resize_flag();
-  }
 }
 }// namespace vulkan_rt::app

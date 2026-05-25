@@ -98,9 +98,18 @@ void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scen
     image_available,
     VK_NULL_HANDLE,
     &image_index);
+  if(acquire_result == VK_ERROR_OUT_OF_DATE_KHR)
+  {
+    swapchain_recreate_requested_ = true;
+    return;
+  }
   if(acquire_result != VK_SUCCESS && acquire_result != VK_SUBOPTIMAL_KHR)
   {
     throw_if_failed(acquire_result, "vkAcquireNextImageKHR");
+  }
+  if(acquire_result == VK_SUBOPTIMAL_KHR)
+  {
+    swapchain_recreate_requested_ = true;
   }
 
   throw_if_failed(vkResetFences(device_.device(), 1, &in_flight_fence), "vkResetFences");
@@ -139,7 +148,11 @@ void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scen
   present_info.pImageIndices = &image_index;
 
   const VkResult present_result = vkQueuePresentKHR(device_.present_queue(), &present_info);
-  if(present_result != VK_SUCCESS && present_result != VK_SUBOPTIMAL_KHR)
+  if(present_result == VK_ERROR_OUT_OF_DATE_KHR || present_result == VK_SUBOPTIMAL_KHR)
+  {
+    swapchain_recreate_requested_ = true;
+  }
+  else if(present_result != VK_SUCCESS)
   {
     throw_if_failed(present_result, "vkQueuePresentKHR");
   }
