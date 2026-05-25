@@ -7,6 +7,7 @@
 #include "render/vulkan/VulkanDevice.hpp"
 #include "render/vulkan/VulkanFrameResources.hpp"
 #include "render/vulkan/RayTracingPipeline.hpp"
+#include "render/vulkan/ShaderBindingTable.hpp"
 #include "render/vulkan/VulkanAllocator.hpp"
 #include "render/vulkan/VulkanBuffer.hpp"
 #include "render/vulkan/VulkanRenderer.hpp"
@@ -292,6 +293,54 @@ int vulkan_rt_pipeline_smoke_test(const AppConfig &config)
   LOGI("  pipeline layout created: {}", pipeline.layout() != VK_NULL_HANDLE);
   LOGI("  shader group count: {}", pipeline.shader_group_count());
   LOGI("  max recursion depth used: 1");
+
+  device.wait_idle();
+  return 0;
+}
+
+int vulkan_sbt_smoke_test(const AppConfig &config)
+{
+  SdlRuntime sdl_runtime;
+  Window window{
+    fmt::format("{} Vulkan SBT smoke", vulkan_rt::cmake::project_name),
+    config.width,
+    config.height,
+  };
+
+  SdlSurfaceProvider surface_provider{window.native_handle()};
+  const std::string application_name{vulkan_rt::cmake::project_name};
+  render::vulkan::VulkanRendererConfig vulkan_config{
+    .validation = config.validation,
+    .application_name = application_name.c_str(),
+    .gpu_index = config.gpu_index,
+  };
+
+  render::vulkan::VulkanContext context{vulkan_config, surface_provider};
+  render::vulkan::VulkanDevice device{context, vulkan_config};
+  render::vulkan::VulkanAllocator allocator{context, device};
+
+  const std::filesystem::path shader_dir{vulkan_rt::cmake::shader_dir};
+  const render::vulkan::ShaderModule raygen{device, shader_dir / "raygen.rgen.spv"};
+  const render::vulkan::ShaderModule miss{device, shader_dir / "miss.rmiss.spv"};
+  const render::vulkan::ShaderModule closest_hit{device, shader_dir / "closesthit.rchit.spv"};
+  const render::vulkan::RayTracingPipeline pipeline{device, raygen, miss, closest_hit};
+  const render::vulkan::ShaderBindingTable sbt{device, allocator, pipeline};
+
+  LOGI("Vulkan shader binding table smoke passed:");
+  LOGI("  SBT buffer created: {}", sbt.buffer() != VK_NULL_HANDLE);
+  LOGI("  SBT size: {} bytes", sbt.size());
+  LOGI("  raygen address/stride/size: {}/{}/{}",
+    sbt.raygen_region().deviceAddress,
+    sbt.raygen_region().stride,
+    sbt.raygen_region().size);
+  LOGI("  miss address/stride/size: {}/{}/{}",
+    sbt.miss_region().deviceAddress,
+    sbt.miss_region().stride,
+    sbt.miss_region().size);
+  LOGI("  hit address/stride/size: {}/{}/{}",
+    sbt.hit_region().deviceAddress,
+    sbt.hit_region().stride,
+    sbt.hit_region().size);
 
   device.wait_idle();
   return 0;

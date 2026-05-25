@@ -66,6 +66,8 @@ set(vulkan
     render/vulkan/VulkanRenderer.cpp
     render/vulkan/RayTracingPipeline.hpp
     render/vulkan/RayTracingPipeline.cpp
+    render/vulkan/ShaderBindingTable.hpp
+    render/vulkan/ShaderBindingTable.cpp
     render/vulkan/ShaderModule.hpp
     render/vulkan/ShaderModule.cpp
     render/vulkan/VulkanAllocator.hpp

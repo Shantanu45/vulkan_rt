@@ -68,6 +68,10 @@ int main(int argc, char **argv)
     return vulkan_rt::app::vulkan_rt_pipeline_smoke_test(config);
   }
 
+  if (config.vulkan_sbt_smoke) {
+    return vulkan_rt::app::vulkan_sbt_smoke_test(config);
+  }
+
   if (config.vulkan_buffer_smoke) {
     return vulkan_rt::app::vulkan_buffer_smoke_test(config);
   }

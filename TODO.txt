@@ -24,6 +24,7 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
       and AccelerationStructure.
 - [x] Add ShaderModule Vulkan type.
 - [x] Add RayTracingPipeline Vulkan type.
+- [x] Add ShaderBindingTable Vulkan type.
 - [x] Add VulkanAllocator Vulkan type (VMA).
 - [x] Add VulkanBuffer Vulkan type.
 - [ ] Avoid broad Vulkan abstraction layers that hide core API concepts.
