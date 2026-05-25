@@ -21,6 +21,7 @@ public:
   RayTracingScene &operator=(const RayTracingScene &) = delete;
 
   [[nodiscard]] const AccelerationStructure &tlas() const;
+  [[nodiscard]] const VulkanBuffer &vertex_buffer() const;
   [[nodiscard]] const VulkanBuffer &material_index_buffer() const;
   [[nodiscard]] const VulkanBuffer &material_buffer() const;
 

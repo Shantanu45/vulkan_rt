@@ -36,6 +36,16 @@ const AccelerationStructure &RayTracingScene::tlas() const
   return *tlas_;
 }
 
+const VulkanBuffer &RayTracingScene::vertex_buffer() const
+{
+  if(!vertex_buffer_)
+  {
+    throw std::runtime_error("Ray tracing scene has no vertex buffer.");
+  }
+
+  return *vertex_buffer_;
+}
+
 const VulkanBuffer &RayTracingScene::material_index_buffer() const
 {
   if(!material_index_buffer_)
@@ -100,6 +110,7 @@ void RayTracingScene::build_scene(const VulkanDevice &device, const VulkanAlloca
     BufferCreateInfo{
       .size = static_cast<VkDeviceSize>(vertices.size() * sizeof(float)),
       .usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |       // VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR means: The buffer may be read by vkCmdBuildAccelerationStructuresKHR while building the BLAS. In our case, those reads are the triangle positions.
+               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,// VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT means: The buffer can be addressed through a raw GPU device address, which is exactly how the BLAS geometry points at it
       .memory_usage = VMA_MEMORY_USAGE_AUTO,
       .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,        // tells VMA "This allocation should be CPU-mappable, and I mostly plan to write it once/sequentially from the CPU."
@@ -336,7 +347,6 @@ instances pointing to it.
 https://docs.vulkan.org/tutorial/latest/courses/18_Ray_tracing/02_Acceleration_structures.html
 https://nvpro-samples.github.io/vk_raytracing_tutorial_KHR/
 */
-
 
 
 

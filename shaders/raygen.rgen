@@ -21,7 +21,21 @@ layout(set = 0, binding = 6) uniform FrameData
   uint _padding;
 } frame_data;
 
-layout(location = 0) rayPayloadEXT vec3 payload;
+struct RayPayload
+{
+  vec3 radiance;
+  uint hit;
+  vec3 hit_position;
+  float _pad0;
+  vec3 normal;
+  float _pad1;
+  vec3 albedo;
+  float _pad2;
+  vec3 emission;
+  float _pad3;
+};
+
+layout(location = 0) rayPayloadEXT RayPayload payload;
 
 uint hash_u32(uint value)
 {
@@ -39,10 +53,26 @@ float random_float(inout uint state)
   return float(state) * (1.0 / 4294967296.0);
 }
 
+vec3 random_unit_vector(inout uint state)
+{
+  const float z = random_float(state) * 2.0 - 1.0;
+  const float a = random_float(state) * 6.28318530718;
+  const float r = sqrt(max(0.0, 1.0 - z * z));
+  return vec3(r * cos(a), r * sin(a), z);
+}
+
+vec3 random_hemisphere_direction(vec3 normal, inout uint state)
+{
+  vec3 direction = normalize(normal + random_unit_vector(state));
+  if(dot(direction, normal) < 0.0)
+  {
+    direction = -direction;
+  }
+  return direction;
+}
+
 void main()
 {
-  payload = vec3(0.0);
-
   uint rng_state =
     hash_u32(gl_LaunchIDEXT.x) ^
     hash_u32(gl_LaunchIDEXT.y * 16777619u) ^
@@ -60,21 +90,47 @@ void main()
     camera.right.xyz * screen.x * camera.forward_aspect.w * tan_half_fov_y -
     camera.up.xyz * screen.y * tan_half_fov_y);
 
-  traceRayEXT(
-    tlas,
-    uint(gl_RayFlagsOpaqueEXT),
-    0xffu,
-    0u,
-    0u,
-    0u,
-    origin,
-    0.001,
-    direction,
-    100.0,
-    0);
+  vec3 path_origin = origin;
+  vec3 path_direction = direction;
+  vec3 throughput = vec3(1.0);
+  vec3 radiance = vec3(0.0);
+
+  for(uint bounce = 0u; bounce < 2u; ++bounce)
+  {
+    payload.radiance = vec3(0.0);
+    payload.hit = 0u;
+    payload.hit_position = vec3(0.0);
+    payload.normal = vec3(0.0, 1.0, 0.0);
+    payload.albedo = vec3(0.0);
+    payload.emission = vec3(0.0);
+
+    traceRayEXT(
+      tlas,
+      uint(gl_RayFlagsOpaqueEXT),
+      0xffu,
+      0u,
+      0u,
+      0u,
+      path_origin,
+      0.001,
+      path_direction,
+      100.0,
+      0);
+
+    if(payload.hit == 0u)
+    {
+      radiance += throughput * payload.radiance;
+      break;
+    }
+
+    radiance += throughput * payload.emission;
+    throughput *= payload.albedo;
+    path_origin = payload.hit_position + payload.normal * 0.001;
+    path_direction = random_hemisphere_direction(payload.normal, rng_state);
+  }
 
   const ivec2 pixel = ivec2(gl_LaunchIDEXT.xy);
-  const vec3 current_sample = payload;
+  const vec3 current_sample = radiance;
   const vec3 previous = imageLoad(accumulation_image, pixel).rgb;
   const bool reset = frame_data.reset_accumulation != 0u || frame_data.sample_index == 0u;
   const float sample_count = float(frame_data.sample_index + 1u);

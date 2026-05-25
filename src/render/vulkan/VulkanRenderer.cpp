@@ -217,6 +217,7 @@ void VulkanRenderer::create_ray_tracing_resources(const scene::Scene &scene, con
     ray_tracing_->scene->tlas(),
     *ray_tracing_->output_image,
     *ray_tracing_->accumulation_image,
+    ray_tracing_->scene->vertex_buffer(),
     ray_tracing_->scene->material_index_buffer(),
     ray_tracing_->scene->material_buffer(),
     ray_tracing_->camera->buffer(),

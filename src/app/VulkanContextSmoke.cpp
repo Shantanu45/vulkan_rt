@@ -487,6 +487,29 @@ int vulkan_rt_descriptor_smoke_test(const AppConfig &config)
       .memory_usage = VMA_MEMORY_USAGE_AUTO,
     },
   };
+  constexpr std::array<float, 9> smoke_vertices{
+    0.0F,
+    -0.5F,
+    0.0F,
+    0.5F,
+    0.5F,
+    0.0F,
+    -0.5F,
+    0.5F,
+    0.0F,
+  };
+  render::vulkan::VulkanBuffer vertex_buffer{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = static_cast<VkDeviceSize>(smoke_vertices.size() * sizeof(float)),
+      .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    }};
+  auto *vertex_data = static_cast<float *>(vertex_buffer.map());
+  std::copy(smoke_vertices.begin(), smoke_vertices.end(), vertex_data);
+  vertex_buffer.flush();
+  vertex_buffer.unmap();
 
   render::vulkan::VulkanBuffer material_index_buffer{
     allocator,
@@ -527,6 +550,7 @@ int vulkan_rt_descriptor_smoke_test(const AppConfig &config)
     tlas,
     output_image,
     accumulation_image,
+    vertex_buffer,
     material_index_buffer,
     material_buffer,
     ray_tracing_camera.buffer(),
@@ -801,6 +825,7 @@ int vulkan_trace_smoke_test(const AppConfig &config)
     tlas,
     output_image,
     accumulation_image,
+    vertex_buffer,
     material_index_buffer,
     material_buffer,
     ray_tracing_camera.buffer(),
