@@ -42,6 +42,7 @@ public:
   void wait_idle() override;
 
 private:
+  // TODO: add doc
   void create_ray_tracing_resources(const scene::Scene &scene);
   void destroy_ray_tracing_resources();
   void recreate_swapchain_if_needed(const scene::Scene &scene);
