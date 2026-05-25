@@ -79,6 +79,19 @@ VkDeviceSize VulkanBuffer::size() const
   return size_;
 }
 
+VkDeviceAddress VulkanBuffer::device_address(const VulkanDevice &device) const
+{
+  if(buffer_ == VK_NULL_HANDLE)
+  {
+    throw std::runtime_error("Cannot query device address for a null Vulkan buffer.");
+  }
+
+  VkBufferDeviceAddressInfo address_info{};
+  address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+  address_info.buffer = buffer_;
+  return vkGetBufferDeviceAddress(device.device(), &address_info);
+}
+
 void *VulkanBuffer::map()
 {
   if(mapped_)

@@ -235,16 +235,19 @@ int vulkan_buffer_smoke_test(const AppConfig &config)
 
   auto *data = static_cast<std::uint8_t *>(staging.map());
   for(std::uint32_t i = 0; i < 256; ++i) { data[i] = static_cast<std::uint8_t>(i); }
+  staging.flush();
   staging.unmap();
 
   render::vulkan::VulkanBuffer device_buffer{
     allocator,
     render::vulkan::BufferCreateInfo{
       .size = 1024,
-      .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
       .memory_usage = VMA_MEMORY_USAGE_AUTO,
       .alloc_flags = 0,
     }};
+  const VkDeviceAddress device_buffer_address = device_buffer.device_address(device);
 
   LOGI("Vulkan buffer smoke passed:");
   LOGI("  allocator created: {}", allocator.allocator() != VK_NULL_HANDLE);
@@ -252,6 +255,7 @@ int vulkan_buffer_smoke_test(const AppConfig &config)
   LOGI("  staging size: {} bytes", staging.size());
   LOGI("  device buffer handle: {}", device_buffer.buffer() != VK_NULL_HANDLE);
   LOGI("  device buffer size: {} bytes", device_buffer.size());
+  LOGI("  device buffer address: {}", device_buffer_address);
 
   device.wait_idle();
   return 0;

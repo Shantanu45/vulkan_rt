@@ -4,6 +4,7 @@
 #include <vk_mem_alloc.h>
 
 #include "VulkanAllocator.hpp"
+#include "VulkanDevice.hpp"
 
 namespace vulkan_rt::render::vulkan
 {
@@ -30,6 +31,7 @@ public:
   [[nodiscard]] VkBuffer buffer() const;
   [[nodiscard]] VmaAllocation allocation() const;
   [[nodiscard]] VkDeviceSize size() const;
+  [[nodiscard]] VkDeviceAddress device_address(const VulkanDevice &device) const;
 
   [[nodiscard]] void *map();
   void unmap();
