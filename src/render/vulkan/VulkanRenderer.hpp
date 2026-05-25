@@ -48,6 +48,7 @@ private:
     std::unique_ptr<RayTracingScene> scene;
     std::unique_ptr<RayTracingCamera> camera;
     std::unique_ptr<VulkanImage> output_image;
+    std::unique_ptr<VulkanImage> accumulation_image;
     std::unique_ptr<RayTracingDescriptorSet> descriptors;
     std::unique_ptr<ShaderModule> raygen_shader;
     std::unique_ptr<ShaderModule> miss_shader;

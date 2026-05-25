@@ -57,6 +57,17 @@ VkExtent3D extent_3d(VkExtent2D extent)
 {
   return VkExtent3D{.width = extent.width, .height = extent.height, .depth = 1};
 }
+
+ImageCreateInfo make_storage_image_create_info(VkExtent2D extent, VkFormat format, VkImageUsageFlags extra_usage = 0)
+{
+  return ImageCreateInfo{
+    .width = extent.width,
+    .height = extent.height,
+    .format = format,
+    .usage = VK_IMAGE_USAGE_STORAGE_BIT | extra_usage,
+    .memory_usage = VMA_MEMORY_USAGE_AUTO,
+  };
+}
 }
 
 VulkanRenderer::VulkanRenderer(
@@ -190,13 +201,9 @@ void VulkanRenderer::create_ray_tracing_resources(const scene::Scene &scene, con
   ray_tracing_->camera = std::make_unique<RayTracingCamera>(allocator_, camera);
   ray_tracing_->output_image = std::make_unique<VulkanImage>(device_,
     allocator_,
-    ImageCreateInfo{
-      .width = extent.width,
-      .height = extent.height,
-      .format = VK_FORMAT_R8G8B8A8_UNORM,
-      .usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-      .memory_usage = VMA_MEMORY_USAGE_AUTO,
-    });
+    make_storage_image_create_info(extent, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_TRANSFER_SRC_BIT));
+  ray_tracing_->accumulation_image = std::make_unique<VulkanImage>(
+    device_, allocator_, make_storage_image_create_info(extent, VK_FORMAT_R32G32B32A32_SFLOAT));
   ray_tracing_->descriptors = std::make_unique<RayTracingDescriptorSet>(device_,
     ray_tracing_->scene->tlas(),
     *ray_tracing_->output_image,
