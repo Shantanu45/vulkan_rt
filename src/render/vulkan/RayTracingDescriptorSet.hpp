@@ -17,7 +17,8 @@ public:
     const AccelerationStructure &tlas,
     const VulkanImage &output_image,
     const VulkanBuffer &material_indices,
-    const VulkanBuffer &materials);
+    const VulkanBuffer &materials,
+    const VulkanBuffer &camera);
   ~RayTracingDescriptorSet();
 
   RayTracingDescriptorSet(RayTracingDescriptorSet &&other) noexcept;
@@ -36,7 +37,8 @@ private:
     const AccelerationStructure &tlas,
     const VulkanImage &output_image,
     const VulkanBuffer &material_indices,
-    const VulkanBuffer &materials);
+    const VulkanBuffer &materials,
+    const VulkanBuffer &camera);
   void destroy();
 
   VkDevice device_ = VK_NULL_HANDLE;

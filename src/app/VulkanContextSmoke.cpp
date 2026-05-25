@@ -8,6 +8,7 @@
 #include "render/vulkan/VulkanContext.hpp"
 #include "render/vulkan/VulkanDevice.hpp"
 #include "render/vulkan/VulkanFrameResources.hpp"
+#include "render/vulkan/RayTracingCamera.hpp"
 #include "render/vulkan/RayTracingPipeline.hpp"
 #include "render/vulkan/RayTracingDescriptorSet.hpp"
 #include "render/vulkan/ShaderBindingTable.hpp"
@@ -505,12 +506,15 @@ int vulkan_rt_descriptor_smoke_test(const AppConfig &config)
   material_buffer.flush();
   material_buffer.unmap();
 
+  const scene::Camera camera;
+  const render::vulkan::RayTracingCamera ray_tracing_camera{allocator, camera};
   const render::vulkan::RayTracingDescriptorSet descriptors{
     device,
     tlas,
     output_image,
     material_index_buffer,
     material_buffer,
+    ray_tracing_camera.buffer(),
   };
 
   LOGI("Vulkan ray tracing descriptor smoke passed:");
@@ -761,12 +765,15 @@ int vulkan_trace_smoke_test(const AppConfig &config)
   material_buffer.flush();
   material_buffer.unmap();
 
+  const scene::Camera camera;
+  const render::vulkan::RayTracingCamera ray_tracing_camera{allocator, camera};
   const render::vulkan::RayTracingDescriptorSet descriptors{
     device,
     tlas,
     output_image,
     material_index_buffer,
     material_buffer,
+    ray_tracing_camera.buffer(),
   };
 
   const std::filesystem::path shader_dir{vulkan_rt::cmake::shader_dir};

@@ -187,7 +187,8 @@ void VulkanRenderer::create_ray_tracing_resources(const scene::Scene &scene, con
     ray_tracing_scene_->tlas(),
     *output_image_,
     ray_tracing_scene_->material_index_buffer(),
-    ray_tracing_scene_->material_buffer());
+    ray_tracing_scene_->material_buffer(),
+    ray_tracing_camera_->buffer());
 
   const std::filesystem::path shader_dir{vulkan_rt::cmake::shader_dir};
   raygen_shader_ = std::make_unique<ShaderModule>(device_, shader_dir / "raygen.rgen.spv");
