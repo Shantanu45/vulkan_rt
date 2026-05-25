@@ -3,8 +3,8 @@
 #include "render/NullRenderer.hpp"
 #include "util/logger.h"
 
-#include <memory>
 #include <cmath>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
@@ -57,6 +57,11 @@ bool Engine::update_camera(const CameraControlInput &input, double delta_seconds
     changed = true;
   }
 
+  if(changed)
+  {
+    reset_accumulation_requested_ = true;
+  }
+
   return changed;
 }
 
@@ -67,9 +72,11 @@ void Engine::render()
       .frame_index = frame_stats_.frame_index,
       .frame_time_ms = frame_stats_.frame_time_ms,
       .fps = frame_stats_.fps,
+      .reset_accumulation = reset_accumulation_requested_,
     },
     scene_,
     camera_);
+  reset_accumulation_requested_ = false;
   ++frame_stats_.frame_index;
 }
 
@@ -87,6 +94,7 @@ void Engine::resize(int width, int height)
 {
   camera_.set_viewport_size(width, height);
   renderer_->resize(width, height);
+  reset_accumulation_requested_ = true;
 }
 
 const FrameStats &Engine::frame_stats() const { return frame_stats_; }

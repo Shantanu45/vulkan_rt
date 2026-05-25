@@ -39,8 +39,8 @@ set(app
 source_group("app" FILES ${app})
 
 set(input
-    input/input.cpp
-    input/input.h
+    input/InputSystem.cpp
+    input/InputSystem.hpp
 )
 
 source_group("input" FILES ${input})

@@ -5,6 +5,36 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <memory>
+#include <vector>
+
+namespace
+{
+class SpyRenderer final : public vulkan_rt::render::Renderer
+{
+public:
+  void render(
+    const vulkan_rt::render::RenderFrameInfo &frame_info,
+    const vulkan_rt::scene::Scene &scene,
+    const vulkan_rt::scene::Camera &camera) override
+  {
+    static_cast<void>(scene);
+    static_cast<void>(camera);
+    reset_accumulation_frames.push_back(frame_info.reset_accumulation);
+  }
+
+  void resize(int width, int height) override
+  {
+    static_cast<void>(width);
+    static_cast<void>(height);
+  }
+
+  void wait_idle() override {}
+
+  std::vector<bool> reset_accumulation_frames;
+};
+}
+
 TEST_CASE("engine config is derived from app config")
 {
   vulkan_rt::app::AppConfig app_config;
@@ -90,4 +120,29 @@ TEST_CASE("engine rotates camera from mouse delta when rotation is active")
   CHECK(changed);
   CHECK(engine.camera().yaw_degrees() == Catch::Approx(-88.0F));
   CHECK(engine.camera().pitch_degrees() == Catch::Approx(1.0F));
+}
+
+TEST_CASE("engine requests accumulation reset for startup and camera changes")
+{
+  vulkan_rt::engine::Engine engine{{}};
+  auto renderer = std::make_unique<SpyRenderer>();
+  auto *spy = renderer.get();
+  engine.set_renderer(std::move(renderer));
+
+  engine.render();
+  engine.render();
+
+  REQUIRE(spy->reset_accumulation_frames.size() == 2);
+  CHECK(spy->reset_accumulation_frames[0]);
+  CHECK_FALSE(spy->reset_accumulation_frames[1]);
+
+  engine.update_camera(
+    vulkan_rt::engine::CameraControlInput{
+      .move_forward = true,
+    },
+    1.0);
+  engine.render();
+
+  REQUIRE(spy->reset_accumulation_frames.size() == 3);
+  CHECK(spy->reset_accumulation_frames[2]);
 }

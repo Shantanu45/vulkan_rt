@@ -4,7 +4,7 @@
 #include "app/UiLayer.hpp"
 #include "app/Window.hpp"
 #include "engine/Engine.hpp"
-#include "input/input.h"
+#include "input/InputSystem.hpp"
 
 #include <chrono>
 

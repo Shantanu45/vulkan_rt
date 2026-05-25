@@ -16,6 +16,7 @@ TEST_CASE("null renderer accepts renderer lifecycle calls")
                                    .frame_index = 42,
                                    .frame_time_ms = 16.6,
                                    .fps = 60.0,
+                                   .reset_accumulation = true,
                                  },
     scene,
     camera));

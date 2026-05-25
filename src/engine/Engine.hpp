@@ -46,5 +46,6 @@ private:
   scene::Scene scene_;
   scene::Camera camera_;
   std::unique_ptr<render::Renderer> renderer_;
+  bool reset_accumulation_requested_ = true;
 };
 }// namespace vulkan_rt::engine

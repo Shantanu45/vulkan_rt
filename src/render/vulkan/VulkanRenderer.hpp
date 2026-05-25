@@ -43,6 +43,19 @@ public:
   void wait_idle() override;
 
 private:
+  struct RayTracingResources
+  {
+    std::unique_ptr<RayTracingScene> scene;
+    std::unique_ptr<RayTracingCamera> camera;
+    std::unique_ptr<VulkanImage> output_image;
+    std::unique_ptr<RayTracingDescriptorSet> descriptors;
+    std::unique_ptr<ShaderModule> raygen_shader;
+    std::unique_ptr<ShaderModule> miss_shader;
+    std::unique_ptr<ShaderModule> closest_hit_shader;
+    std::unique_ptr<RayTracingPipeline> pipeline;
+    std::unique_ptr<ShaderBindingTable> sbt;
+  };
+
   // TODO: add doc
   void create_ray_tracing_resources(const scene::Scene &scene, const scene::Camera &camera);
   void destroy_ray_tracing_resources();
@@ -56,15 +69,7 @@ private:
   VulkanAllocator allocator_;
   VulkanSwapchain swapchain_;
   VulkanFrameResources frames_;
-  std::unique_ptr<RayTracingScene> ray_tracing_scene_;
-  std::unique_ptr<RayTracingCamera> ray_tracing_camera_;
-  std::unique_ptr<VulkanImage> output_image_;
-  std::unique_ptr<RayTracingDescriptorSet> descriptors_;
-  std::unique_ptr<ShaderModule> raygen_shader_;
-  std::unique_ptr<ShaderModule> miss_shader_;
-  std::unique_ptr<ShaderModule> closest_hit_shader_;
-  std::unique_ptr<RayTracingPipeline> pipeline_;
-  std::unique_ptr<ShaderBindingTable> sbt_;
+  std::unique_ptr<RayTracingResources> ray_tracing_;
   std::vector<VkImageLayout> swapchain_image_layouts_;
   VkImageLayout output_image_layout_ = VK_IMAGE_LAYOUT_UNDEFINED;
   SwapchainExtent pending_extent_{};

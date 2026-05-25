@@ -75,11 +75,11 @@ void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scen
   static_cast<void>(frame_info);
 
   recreate_swapchain_if_needed(scene, camera);
-  if(!ray_tracing_scene_)
+  if(!ray_tracing_)
   {
     create_ray_tracing_resources(scene, camera);
   }
-  ray_tracing_camera_->update(camera);
+  ray_tracing_->camera->update(camera);
 
   const auto frame_index = frames_.current_frame_index();
   const auto command_buffer = frames_.command_buffers()[frame_index];
@@ -185,9 +185,10 @@ VulkanRenderer::~VulkanRenderer() {}
 void VulkanRenderer::create_ray_tracing_resources(const scene::Scene &scene, const scene::Camera &camera)
 {
   const auto extent = swapchain_.extent();
-  ray_tracing_scene_ = std::make_unique<RayTracingScene>(device_, allocator_, scene);
-  ray_tracing_camera_ = std::make_unique<RayTracingCamera>(allocator_, camera);
-  output_image_ = std::make_unique<VulkanImage>(device_,
+  ray_tracing_ = std::make_unique<RayTracingResources>();
+  ray_tracing_->scene = std::make_unique<RayTracingScene>(device_, allocator_, scene);
+  ray_tracing_->camera = std::make_unique<RayTracingCamera>(allocator_, camera);
+  ray_tracing_->output_image = std::make_unique<VulkanImage>(device_,
     allocator_,
     ImageCreateInfo{
       .width = extent.width,
@@ -196,34 +197,29 @@ void VulkanRenderer::create_ray_tracing_resources(const scene::Scene &scene, con
       .usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
       .memory_usage = VMA_MEMORY_USAGE_AUTO,
     });
-  descriptors_ = std::make_unique<RayTracingDescriptorSet>(device_,
-    ray_tracing_scene_->tlas(),
-    *output_image_,
-    ray_tracing_scene_->material_index_buffer(),
-    ray_tracing_scene_->material_buffer(),
-    ray_tracing_camera_->buffer());
+  ray_tracing_->descriptors = std::make_unique<RayTracingDescriptorSet>(device_,
+    ray_tracing_->scene->tlas(),
+    *ray_tracing_->output_image,
+    ray_tracing_->scene->material_index_buffer(),
+    ray_tracing_->scene->material_buffer(),
+    ray_tracing_->camera->buffer());
 
   const std::filesystem::path shader_dir{vulkan_rt::cmake::shader_dir};
-  raygen_shader_ = std::make_unique<ShaderModule>(device_, shader_dir / "raygen.rgen.spv");
-  miss_shader_ = std::make_unique<ShaderModule>(device_, shader_dir / "miss.rmiss.spv");
-  closest_hit_shader_ = std::make_unique<ShaderModule>(device_, shader_dir / "closesthit.rchit.spv");
-  pipeline_ = std::make_unique<RayTracingPipeline>(
-    device_, *raygen_shader_, *miss_shader_, *closest_hit_shader_, descriptors_->layout());
-  sbt_ = std::make_unique<ShaderBindingTable>(device_, allocator_, *pipeline_);
+  ray_tracing_->raygen_shader = std::make_unique<ShaderModule>(device_, shader_dir / "raygen.rgen.spv");
+  ray_tracing_->miss_shader = std::make_unique<ShaderModule>(device_, shader_dir / "miss.rmiss.spv");
+  ray_tracing_->closest_hit_shader = std::make_unique<ShaderModule>(device_, shader_dir / "closesthit.rchit.spv");
+  ray_tracing_->pipeline = std::make_unique<RayTracingPipeline>(device_,
+    *ray_tracing_->raygen_shader,
+    *ray_tracing_->miss_shader,
+    *ray_tracing_->closest_hit_shader,
+    ray_tracing_->descriptors->layout());
+  ray_tracing_->sbt = std::make_unique<ShaderBindingTable>(device_, allocator_, *ray_tracing_->pipeline);
   output_image_layout_ = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
 void VulkanRenderer::destroy_ray_tracing_resources()
 {
-  sbt_.reset();
-  pipeline_.reset();
-  closest_hit_shader_.reset();
-  miss_shader_.reset();
-  raygen_shader_.reset();
-  descriptors_.reset();
-  output_image_.reset();
-  ray_tracing_camera_.reset();
-  ray_tracing_scene_.reset();
+  ray_tracing_.reset();
   output_image_layout_ = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
@@ -251,7 +247,8 @@ void VulkanRenderer::recreate_swapchain(SwapchainExtent extent, const scene::Sce
 
 void VulkanRenderer::trace_to_output_image(VkCommandBuffer command_buffer)
 {
-  if(!output_image_ || !pipeline_ || !descriptors_ || !sbt_)
+  if(!ray_tracing_ || !ray_tracing_->output_image || !ray_tracing_->pipeline || !ray_tracing_->descriptors ||
+     !ray_tracing_->sbt)
   {
     throw std::runtime_error("Ray tracing resources are not initialized.");
   }
@@ -262,7 +259,7 @@ void VulkanRenderer::trace_to_output_image(VkCommandBuffer command_buffer)
     output_image_layout_ == VK_IMAGE_LAYOUT_UNDEFINED ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT;
 
   transition_image_layout(command_buffer,
-    output_image_->image(),
+    ray_tracing_->output_image->image(),
     output_image_layout_,
     VK_IMAGE_LAYOUT_GENERAL,
     src_access,
@@ -270,27 +267,27 @@ void VulkanRenderer::trace_to_output_image(VkCommandBuffer command_buffer)
     src_stage,
     VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
 
-  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_->pipeline());
-  const auto descriptor_set = descriptors_->descriptor_set();
+  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, ray_tracing_->pipeline->pipeline());
+  const auto descriptor_set = ray_tracing_->descriptors->descriptor_set();
   vkCmdBindDescriptorSets(command_buffer,
     VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
-    pipeline_->layout(),
+    ray_tracing_->pipeline->layout(),
     0,
     1,
     &descriptor_set,
     0,
     nullptr);
   vkCmdTraceRaysKHR(command_buffer,
-    &sbt_->raygen_region(),
-    &sbt_->miss_region(),
-    &sbt_->hit_region(),
-    &sbt_->callable_region(),
-    output_image_->extent().width,
-    output_image_->extent().height,
+    &ray_tracing_->sbt->raygen_region(),
+    &ray_tracing_->sbt->miss_region(),
+    &ray_tracing_->sbt->hit_region(),
+    &ray_tracing_->sbt->callable_region(),
+    ray_tracing_->output_image->extent().width,
+    ray_tracing_->output_image->extent().height,
     1);
 
   transition_image_layout(command_buffer,
-    output_image_->image(),
+    ray_tracing_->output_image->image(),
     VK_IMAGE_LAYOUT_GENERAL,
     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
     VK_ACCESS_SHADER_WRITE_BIT,
@@ -321,10 +318,10 @@ void VulkanRenderer::copy_output_image_to_swapchain(VkCommandBuffer command_buff
   copy_region.dstSubresource.mipLevel = 0;
   copy_region.dstSubresource.baseArrayLayer = 0;
   copy_region.dstSubresource.layerCount = 1;
-  copy_region.extent = extent_3d(output_image_->extent());
+  copy_region.extent = extent_3d(ray_tracing_->output_image->extent());
 
   vkCmdCopyImage(command_buffer,
-    output_image_->image(),
+    ray_tracing_->output_image->image(),
     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
     swapchain_.images()[image_index],
     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
