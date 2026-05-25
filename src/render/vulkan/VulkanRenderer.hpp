@@ -12,6 +12,7 @@
 #include "../Renderer.hpp"
 #include "RayTracingDescriptorSet.hpp"
 #include "RayTracingCamera.hpp"
+#include "RayTracingFrameData.hpp"
 #include "RayTracingPipeline.hpp"
 #include "RayTracingScene.hpp"
 #include "ShaderBindingTable.hpp"
@@ -47,6 +48,7 @@ private:
   {
     std::unique_ptr<RayTracingScene> scene;
     std::unique_ptr<RayTracingCamera> camera;
+    std::unique_ptr<RayTracingFrameData> frame_data;
     std::unique_ptr<VulkanImage> output_image;
     std::unique_ptr<VulkanImage> accumulation_image;
     std::unique_ptr<RayTracingDescriptorSet> descriptors;
@@ -73,7 +75,9 @@ private:
   std::unique_ptr<RayTracingResources> ray_tracing_;
   std::vector<VkImageLayout> swapchain_image_layouts_;
   VkImageLayout output_image_layout_ = VK_IMAGE_LAYOUT_UNDEFINED;
+  VkImageLayout accumulation_image_layout_ = VK_IMAGE_LAYOUT_UNDEFINED;
   SwapchainExtent pending_extent_{};
+  std::uint32_t sample_index_ = 0;
   bool swapchain_recreate_requested_ = false;
 };
 }// namespace vulkan_rt::render::vulkan

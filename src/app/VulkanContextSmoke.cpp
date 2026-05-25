@@ -9,6 +9,7 @@
 #include "render/vulkan/VulkanDevice.hpp"
 #include "render/vulkan/VulkanFrameResources.hpp"
 #include "render/vulkan/RayTracingCamera.hpp"
+#include "render/vulkan/RayTracingFrameData.hpp"
 #include "render/vulkan/RayTracingPipeline.hpp"
 #include "render/vulkan/RayTracingDescriptorSet.hpp"
 #include "render/vulkan/ShaderBindingTable.hpp"
@@ -62,7 +63,7 @@ void transition_image_to_general(VkCommandBuffer command_buffer, VkImage image)
   VkImageMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
   barrier.srcAccessMask = 0;
-  barrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+  barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
   barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -475,6 +476,17 @@ int vulkan_rt_descriptor_smoke_test(const AppConfig &config)
       .memory_usage = VMA_MEMORY_USAGE_AUTO,
     },
   };
+  const render::vulkan::VulkanImage accumulation_image{
+    device,
+    allocator,
+    render::vulkan::ImageCreateInfo{
+      .width = 64,
+      .height = 64,
+      .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+      .usage = VK_IMAGE_USAGE_STORAGE_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+    },
+  };
 
   render::vulkan::VulkanBuffer material_index_buffer{
     allocator,
@@ -508,13 +520,17 @@ int vulkan_rt_descriptor_smoke_test(const AppConfig &config)
 
   const scene::Camera camera;
   const render::vulkan::RayTracingCamera ray_tracing_camera{allocator, camera};
+  render::vulkan::RayTracingFrameData frame_data{allocator};
+  frame_data.update(render::vulkan::GpuRayTracingFrameData{});
   const render::vulkan::RayTracingDescriptorSet descriptors{
     device,
     tlas,
     output_image,
+    accumulation_image,
     material_index_buffer,
     material_buffer,
     ray_tracing_camera.buffer(),
+    frame_data.buffer(),
   };
 
   LOGI("Vulkan ray tracing descriptor smoke passed:");
@@ -734,6 +750,17 @@ int vulkan_trace_smoke_test(const AppConfig &config)
       .memory_usage = VMA_MEMORY_USAGE_AUTO,
     },
   };
+  render::vulkan::VulkanImage accumulation_image{
+    device,
+    allocator,
+    render::vulkan::ImageCreateInfo{
+      .width = 64,
+      .height = 64,
+      .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+      .usage = VK_IMAGE_USAGE_STORAGE_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+    },
+  };
 
   render::vulkan::VulkanBuffer material_index_buffer{
     allocator,
@@ -767,13 +794,17 @@ int vulkan_trace_smoke_test(const AppConfig &config)
 
   const scene::Camera camera;
   const render::vulkan::RayTracingCamera ray_tracing_camera{allocator, camera};
+  render::vulkan::RayTracingFrameData frame_data{allocator};
+  frame_data.update(render::vulkan::GpuRayTracingFrameData{});
   const render::vulkan::RayTracingDescriptorSet descriptors{
     device,
     tlas,
     output_image,
+    accumulation_image,
     material_index_buffer,
     material_buffer,
     ray_tracing_camera.buffer(),
+    frame_data.buffer(),
   };
 
   const std::filesystem::path shader_dir{vulkan_rt::cmake::shader_dir};
@@ -795,6 +826,7 @@ int vulkan_trace_smoke_test(const AppConfig &config)
     render::vulkan::OneShotCommandBuffer command_buffer{device};
     command_buffer.begin();
     transition_image_to_general(command_buffer.command_buffer(), output_image.image());
+    transition_image_to_general(command_buffer.command_buffer(), accumulation_image.image());
     vkCmdBindPipeline(command_buffer.command_buffer(), VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.pipeline());
     const auto descriptor_set = descriptors.descriptor_set();
     vkCmdBindDescriptorSets(command_buffer.command_buffer(),

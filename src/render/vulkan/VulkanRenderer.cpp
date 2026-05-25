@@ -83,14 +83,21 @@ VulkanRenderer::VulkanRenderer(
 
 void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scene &scene, const scene::Camera &camera)
 {
-  static_cast<void>(frame_info);
-
   recreate_swapchain_if_needed(scene, camera);
   if(!ray_tracing_)
   {
     create_ray_tracing_resources(scene, camera);
   }
+  if(frame_info.reset_accumulation)
+  {
+    sample_index_ = 0;
+  }
   ray_tracing_->camera->update(camera);
+  ray_tracing_->frame_data->update(GpuRayTracingFrameData{
+    .sample_index = sample_index_,
+    .frame_index = static_cast<std::uint32_t>(frame_info.frame_index),
+    .reset_accumulation = frame_info.reset_accumulation ? 1U : 0U,
+  });
 
   const auto frame_index = frames_.current_frame_index();
   const auto command_buffer = frames_.command_buffers()[frame_index];
@@ -170,6 +177,7 @@ void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scen
 
   swapchain_image_layouts_[image_index] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
   frames_.advance_frame();
+  ++sample_index_;
 }
 
 void VulkanRenderer::resize(int width, int height)
@@ -199,6 +207,7 @@ void VulkanRenderer::create_ray_tracing_resources(const scene::Scene &scene, con
   ray_tracing_ = std::make_unique<RayTracingResources>();
   ray_tracing_->scene = std::make_unique<RayTracingScene>(device_, allocator_, scene);
   ray_tracing_->camera = std::make_unique<RayTracingCamera>(allocator_, camera);
+  ray_tracing_->frame_data = std::make_unique<RayTracingFrameData>(allocator_);
   ray_tracing_->output_image = std::make_unique<VulkanImage>(device_,
     allocator_,
     make_storage_image_create_info(extent, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_TRANSFER_SRC_BIT));
@@ -207,9 +216,11 @@ void VulkanRenderer::create_ray_tracing_resources(const scene::Scene &scene, con
   ray_tracing_->descriptors = std::make_unique<RayTracingDescriptorSet>(device_,
     ray_tracing_->scene->tlas(),
     *ray_tracing_->output_image,
+    *ray_tracing_->accumulation_image,
     ray_tracing_->scene->material_index_buffer(),
     ray_tracing_->scene->material_buffer(),
-    ray_tracing_->camera->buffer());
+    ray_tracing_->camera->buffer(),
+    ray_tracing_->frame_data->buffer());
 
   const std::filesystem::path shader_dir{vulkan_rt::cmake::shader_dir};
   ray_tracing_->raygen_shader = std::make_unique<ShaderModule>(device_, shader_dir / "raygen.rgen.spv");
@@ -222,12 +233,16 @@ void VulkanRenderer::create_ray_tracing_resources(const scene::Scene &scene, con
     ray_tracing_->descriptors->layout());
   ray_tracing_->sbt = std::make_unique<ShaderBindingTable>(device_, allocator_, *ray_tracing_->pipeline);
   output_image_layout_ = VK_IMAGE_LAYOUT_UNDEFINED;
+  accumulation_image_layout_ = VK_IMAGE_LAYOUT_UNDEFINED;
+  sample_index_ = 0;
 }
 
 void VulkanRenderer::destroy_ray_tracing_resources()
 {
   ray_tracing_.reset();
   output_image_layout_ = VK_IMAGE_LAYOUT_UNDEFINED;
+  accumulation_image_layout_ = VK_IMAGE_LAYOUT_UNDEFINED;
+  sample_index_ = 0;
 }
 
 void VulkanRenderer::recreate_swapchain_if_needed(const scene::Scene &scene, const scene::Camera &camera)
@@ -254,8 +269,8 @@ void VulkanRenderer::recreate_swapchain(SwapchainExtent extent, const scene::Sce
 
 void VulkanRenderer::trace_to_output_image(VkCommandBuffer command_buffer)
 {
-  if(!ray_tracing_ || !ray_tracing_->output_image || !ray_tracing_->pipeline || !ray_tracing_->descriptors ||
-     !ray_tracing_->sbt)
+  if(!ray_tracing_ || !ray_tracing_->output_image || !ray_tracing_->accumulation_image || !ray_tracing_->pipeline ||
+     !ray_tracing_->descriptors || !ray_tracing_->sbt)
   {
     throw std::runtime_error("Ray tracing resources are not initialized.");
   }
@@ -273,6 +288,21 @@ void VulkanRenderer::trace_to_output_image(VkCommandBuffer command_buffer)
     VK_ACCESS_SHADER_WRITE_BIT,
     src_stage,
     VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+
+  const VkAccessFlags accumulation_src_access =
+    accumulation_image_layout_ == VK_IMAGE_LAYOUT_GENERAL ? (VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT) : 0;
+  const VkPipelineStageFlags accumulation_src_stage = accumulation_image_layout_ == VK_IMAGE_LAYOUT_UNDEFINED
+                                                       ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+                                                       : VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+  transition_image_layout(command_buffer,
+    ray_tracing_->accumulation_image->image(),
+    accumulation_image_layout_,
+    VK_IMAGE_LAYOUT_GENERAL,
+    accumulation_src_access,
+    VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+    accumulation_src_stage,
+    VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+  accumulation_image_layout_ = VK_IMAGE_LAYOUT_GENERAL;
 
   vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, ray_tracing_->pipeline->pipeline());
   const auto descriptor_set = ray_tracing_->descriptors->descriptor_set();
