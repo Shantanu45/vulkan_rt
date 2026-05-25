@@ -6,10 +6,12 @@
  * \date   March 2026
  *********************************************************************/
 #include "input.h"
+
 #include <algorithm>
+
 #include "util/logger.h"
 
-namespace EE
+namespace vulkan_rt::input
 {
 	InputSystem::InputSystem()
 	{
@@ -93,7 +95,7 @@ namespace EE
 				{
 					Key k = sdl_to_key[e.key.scancode];
 					if (k != Key::Unknown)
-						keys[static_cast<size_t>(k)] |= (KeyState::KEY_DOWN | KeyState::KEY_PRESSED);
+						keys[static_cast<std::size_t>(k)] |= (KeyState::KEY_DOWN | KeyState::KEY_PRESSED);
 				}
 				break;
 			}
@@ -102,8 +104,8 @@ namespace EE
 				Key k = sdl_to_key[e.key.scancode];
 				if (k != Key::Unknown)
 				{
-					keys[static_cast<size_t>(k)] &= ~(KeyState::KEY_DOWN);
-					keys[static_cast<size_t>(k)] |= KeyState::KEY_RELEASED;
+					keys[static_cast<std::size_t>(k)] &= ~(KeyState::KEY_DOWN);
+					keys[static_cast<std::size_t>(k)] |= KeyState::KEY_RELEASED;
 				}
 				break;
 			}
@@ -112,7 +114,7 @@ namespace EE
 				MouseButton btn = get_mouse_button(e.button.button);
 				if (btn == MouseButton::Count)
 					break;
-				mouse[static_cast<size_t>(btn)] |= MOUSE_DOWN | MOUSE_PRESSED;
+				mouse[static_cast<std::size_t>(btn)] |= MOUSE_DOWN | MOUSE_PRESSED;
 
 				break;
 			}
@@ -121,16 +123,17 @@ namespace EE
 				MouseButton btn = get_mouse_button(e.button.button);
 				if (btn == MouseButton::Count)
 					break;
-				mouse[static_cast<size_t>(btn)] &= ~MOUSE_DOWN;
-				mouse[static_cast<size_t>(btn)] |= MOUSE_RELEASED;
+				mouse[static_cast<std::size_t>(btn)] &= ~MOUSE_DOWN;
+				mouse[static_cast<std::size_t>(btn)] |= MOUSE_RELEASED;
 				break;
 			}
 			case SDL_EVENT_MOUSE_MOTION:
 			{
 				last_mouse_pos = mouse_pos;
-				mouse_pos = glm::vec2(e.motion.x, e.motion.y);
-				mouse_delta = glm::vec2(e.motion.xrel, e.motion.yrel);
-				mouse_delta_accum += mouse_delta;
+				mouse_pos = Vec2{e.motion.x, e.motion.y};
+				mouse_delta = Vec2{e.motion.xrel, e.motion.yrel};
+				mouse_delta_accum.x += mouse_delta.x;
+				mouse_delta_accum.y += mouse_delta.y;
 
 				break;
 			}
@@ -139,45 +142,46 @@ namespace EE
 
 	bool InputSystem::is_mouse_held(MouseButton b) const
 	{
-		return mouse[static_cast<size_t>(b)] & MOUSE_DOWN;
+		return mouse[static_cast<std::size_t>(b)] & MOUSE_DOWN;
 	}
 
 	bool InputSystem::just_mouse_pressed(MouseButton b) const
 	{
-		return mouse[static_cast<size_t>(b)] & MOUSE_PRESSED;
+		return mouse[static_cast<std::size_t>(b)] & MOUSE_PRESSED;
 	}
 
 	bool InputSystem::just_mouse_released(MouseButton b) const
 	{
-		return mouse[static_cast<size_t>(b)] & MOUSE_RELEASED;
+		return mouse[static_cast<std::size_t>(b)] & MOUSE_RELEASED;
 	}
 
-	glm::vec2 InputSystem::get_mouse_position() const
+	Vec2 InputSystem::get_mouse_position() const
 	{
 		return mouse_pos;
 	}
 
-	glm::vec2 InputSystem::get_mouse_delta() const
+	Vec2 InputSystem::get_mouse_delta() const
 	{
-		return mouse_delta;
+		return mouse_delta_accum;
 	}
 
 	void InputSystem::update()
 	{
 		// Clear frame-specific key states
-		for (size_t i = 0; i < static_cast<size_t>(Key::Count); ++i)
+		for (std::size_t i = 0; i < static_cast<std::size_t>(Key::Count); ++i)
 		{
 			keys[i] &= KEY_DOWN;
 		}
 
 		// Clear frame-specific mouse states
-		for (size_t i = 0; i < static_cast<size_t>(MouseButton::Count); ++i)
+		for (std::size_t i = 0; i < static_cast<std::size_t>(MouseButton::Count); ++i)
 		{
 			mouse[i] &= MOUSE_DOWN;
 		}
 
 		// Reset delta (optional, depending on needs)
-		mouse_delta = glm::vec2(0.0f);
+		mouse_delta = Vec2{};
+		mouse_delta_accum = Vec2{};
 
 	}
 }

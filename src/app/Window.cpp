@@ -1,7 +1,5 @@
 #include "app/Window.hpp"
 
-#include "app/Input.hpp"
-
 #include <stdexcept>
 #include <string>
 
@@ -17,13 +15,13 @@ Window::~Window()
   if (handle_ != nullptr) { SDL_DestroyWindow(handle_); }
 }
 
-void Window::poll_events(Input &input)
+void Window::poll_events(vulkan_rt::input::InputSystem &input)
 {
-  input.begin_frame();
+  input.update();
 
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
-    input.handle_event(event);
+    input.on_sdl_event(event);
 
     switch (event.type) {
     case SDL_EVENT_QUIT:
@@ -38,7 +36,7 @@ void Window::poll_events(Input &input)
     }
   }
 
-  if (input.quit_requested() || input.escape_pressed()) { should_close_ = true; }
+  if (input.just_pressed(vulkan_rt::input::Key::Escape)) { should_close_ = true; }
 }
 
 bool Window::should_close() const { return should_close_; }

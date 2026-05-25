@@ -58,3 +58,36 @@ TEST_CASE("engine updates camera aspect ratio on resize")
 
   CHECK(engine.camera().aspect_ratio() == Catch::Approx(4.0F / 3.0F));
 }
+
+TEST_CASE("engine moves camera from camera control input")
+{
+  vulkan_rt::engine::Engine engine{{}};
+  const auto before = engine.camera().position();
+
+  const bool changed = engine.update_camera(
+    vulkan_rt::engine::CameraControlInput{
+      .move_forward = true,
+    },
+    1.0);
+
+  const auto after = engine.camera().position();
+  CHECK(changed);
+  CHECK(after.z != Catch::Approx(before.z));
+}
+
+TEST_CASE("engine rotates camera from mouse delta when rotation is active")
+{
+  vulkan_rt::engine::Engine engine{{}};
+
+  const bool changed = engine.update_camera(
+    vulkan_rt::engine::CameraControlInput{
+      .rotate = true,
+      .mouse_delta_x = 20.0F,
+      .mouse_delta_y = -10.0F,
+    },
+    1.0);
+
+  CHECK(changed);
+  CHECK(engine.camera().yaw_degrees() == Catch::Approx(-88.0F));
+  CHECK(engine.camera().pitch_degrees() == Catch::Approx(1.0F));
+}

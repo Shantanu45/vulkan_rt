@@ -1,10 +1,10 @@
 #pragma once
 
 #include "app/AppConfig.hpp"
-#include "app/Input.hpp"
 #include "app/UiLayer.hpp"
 #include "app/Window.hpp"
 #include "engine/Engine.hpp"
+#include "input/input.h"
 
 #include <chrono>
 
@@ -43,7 +43,7 @@ private:
   AppConfig config_;
   SdlRuntime sdl_runtime_;
   Window window_;
-  Input input_;
+  vulkan_rt::input::InputSystem input_;
   engine::Engine engine_;
   UiLayer ui_;
   Clock::time_point previous_frame_time_;

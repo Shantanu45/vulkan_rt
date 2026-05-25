@@ -26,8 +26,6 @@ set(app
   app/AppConfig.hpp
   app/Application.cpp
   app/Application.hpp
-  app/Input.cpp
-  app/Input.hpp
   app/SdlSurfaceProvider.cpp
   app/SdlSurfaceProvider.hpp
   app/UiLayer.cpp
@@ -39,6 +37,13 @@ set(app
 )
 
 source_group("app" FILES ${app})
+
+set(input
+    input/input.cpp
+    input/input.h
+)
+
+source_group("input" FILES ${input})
 
 set(engine
     engine/Engine.cpp
@@ -154,6 +159,7 @@ set_target_properties(vulkan_rt_shaders PROPERTIES FOLDER "assets")
 
 add_executable(${PROJECT_NAME}
 ${app}
+${input}
 ${engine}
 ${render}
 ${vulkan}

@@ -9,6 +9,20 @@
 #include <memory>
 
 namespace vulkan_rt::engine {
+struct CameraControlInput
+{
+  bool move_forward = false;
+  bool move_backward = false;
+  bool move_left = false;
+  bool move_right = false;
+  bool move_up = false;
+  bool move_down = false;
+  bool fast_move = false;
+  bool rotate = false;
+  float mouse_delta_x = 0.0F;
+  float mouse_delta_y = 0.0F;
+};
+
 class Engine
 {
 public:
@@ -16,6 +30,7 @@ public:
   ~Engine();
 
   void update(double delta_seconds);
+  bool update_camera(const CameraControlInput &input, double delta_seconds);
   void render();
   void resize(int width, int height);
   void set_renderer(std::unique_ptr<render::Renderer> renderer);

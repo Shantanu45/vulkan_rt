@@ -15,6 +15,25 @@
 #include <utility>
 
 namespace vulkan_rt::app {
+namespace
+{
+engine::CameraControlInput make_camera_control_input(const vulkan_rt::input::InputSystem &input)
+{
+  return engine::CameraControlInput{
+    .move_forward = input.is_held(vulkan_rt::input::Key::W),
+    .move_backward = input.is_held(vulkan_rt::input::Key::S),
+    .move_left = input.is_held(vulkan_rt::input::Key::A),
+    .move_right = input.is_held(vulkan_rt::input::Key::D),
+    .move_up = input.is_held(vulkan_rt::input::Key::E),
+    .move_down = input.is_held(vulkan_rt::input::Key::Q),
+    .fast_move = input.is_held(vulkan_rt::input::Key::LeftShift),
+    .rotate = input.is_mouse_held(vulkan_rt::input::MouseButton::Right),
+    .mouse_delta_x = input.get_mouse_delta().x,
+    .mouse_delta_y = input.get_mouse_delta().y,
+  };
+}
+}
+
 SdlRuntime::SdlRuntime()
 {
   if (!SDL_Init(SDL_INIT_VIDEO)) { throw std::runtime_error(std::string{ "SDL_Init failed: " } + SDL_GetError()); }
@@ -82,6 +101,7 @@ void Application::tick_once(double delta_seconds)
 {
   window_.poll_events(input_);
 
+  engine_.update_camera(make_camera_control_input(input_), delta_seconds);
   engine_.update(delta_seconds);
   engine_.render();
 

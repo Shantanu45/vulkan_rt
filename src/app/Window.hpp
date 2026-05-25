@@ -1,5 +1,7 @@
 #pragma once
 
+#include "input/input.h"
+
 #include <SDL3/SDL.h>
 
 #include <string_view>
@@ -10,8 +12,6 @@ struct Extent
   int width = 0;
   int height = 0;
 };
-
-class Input;
 
 class Window
 {
@@ -24,7 +24,7 @@ public:
   Window(Window &&) = delete;
   Window &operator=(Window &&) = delete;
 
-  void poll_events(Input &input);
+  void poll_events(vulkan_rt::input::InputSystem &input);
 
   [[nodiscard]] bool should_close() const;
   [[nodiscard]] bool was_resized() const;
