@@ -3,6 +3,15 @@
 
 layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;
 layout(set = 0, binding = 1, rgba8) uniform image2D output_image;
+
+layout(set = 0, binding = 4) uniform Camera
+{
+  vec4 position_fov_y;
+  vec4 forward_aspect;
+  vec4 right;
+  vec4 up;
+} camera;
+
 layout(location = 0) rayPayloadEXT vec3 payload;
 
 void main()
@@ -13,8 +22,12 @@ void main()
   const vec2 uv = pixel_center / vec2(gl_LaunchSizeEXT.xy);
   const vec2 screen = uv * 2.0 - 1.0;
 
-  const vec3 origin = vec3(0.0, 0.0, 3.0);
-  const vec3 direction = normalize(vec3(screen.x, -screen.y, -1.0));
+  const float tan_half_fov_y = tan(radians(camera.position_fov_y.w) * 0.5);
+  const vec3 origin = camera.position_fov_y.xyz;
+  const vec3 direction = normalize(
+    camera.forward_aspect.xyz +
+    camera.right.xyz * screen.x * camera.forward_aspect.w * tan_half_fov_y -
+    camera.up.xyz * screen.y * tan_half_fov_y);
 
   traceRayEXT(
     tlas,
