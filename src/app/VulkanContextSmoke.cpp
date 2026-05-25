@@ -37,6 +37,12 @@ namespace vulkan_rt::app
 {
 namespace
 {
+struct SmokeGpuMaterial
+{
+  float albedo[4]{};
+  float emission[4]{};
+};
+
 std::string vulkan_result_message(const char *operation, VkResult result)
 {
   return std::string{operation} + " failed with VkResult " + std::to_string(static_cast<int>(result));
@@ -469,7 +475,43 @@ int vulkan_rt_descriptor_smoke_test(const AppConfig &config)
     },
   };
 
-  const render::vulkan::RayTracingDescriptorSet descriptors{device, tlas, output_image};
+  render::vulkan::VulkanBuffer material_index_buffer{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = sizeof(std::uint32_t),
+      .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    }};
+  auto *material_index_data = static_cast<std::uint32_t *>(material_index_buffer.map());
+  *material_index_data = 0;
+  material_index_buffer.flush();
+  material_index_buffer.unmap();
+
+  const SmokeGpuMaterial smoke_material{
+    .albedo = {0.8F, 0.7F, 0.6F, 1.0F},
+    .emission = {0.0F, 0.0F, 0.0F, 0.0F},
+  };
+  render::vulkan::VulkanBuffer material_buffer{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = sizeof(SmokeGpuMaterial),
+      .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    }};
+  auto *material_data = static_cast<SmokeGpuMaterial *>(material_buffer.map());
+  *material_data = smoke_material;
+  material_buffer.flush();
+  material_buffer.unmap();
+
+  const render::vulkan::RayTracingDescriptorSet descriptors{
+    device,
+    tlas,
+    output_image,
+    material_index_buffer,
+    material_buffer,
+  };
 
   LOGI("Vulkan ray tracing descriptor smoke passed:");
   LOGI("  descriptor set layout created: {}", descriptors.layout() != VK_NULL_HANDLE);
@@ -689,7 +731,43 @@ int vulkan_trace_smoke_test(const AppConfig &config)
     },
   };
 
-  const render::vulkan::RayTracingDescriptorSet descriptors{device, tlas, output_image};
+  render::vulkan::VulkanBuffer material_index_buffer{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = sizeof(std::uint32_t),
+      .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    }};
+  auto *material_index_data = static_cast<std::uint32_t *>(material_index_buffer.map());
+  *material_index_data = 0;
+  material_index_buffer.flush();
+  material_index_buffer.unmap();
+
+  const SmokeGpuMaterial smoke_material{
+    .albedo = {0.8F, 0.7F, 0.6F, 1.0F},
+    .emission = {0.0F, 0.0F, 0.0F, 0.0F},
+  };
+  render::vulkan::VulkanBuffer material_buffer{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = sizeof(SmokeGpuMaterial),
+      .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    }};
+  auto *material_data = static_cast<SmokeGpuMaterial *>(material_buffer.map());
+  *material_data = smoke_material;
+  material_buffer.flush();
+  material_buffer.unmap();
+
+  const render::vulkan::RayTracingDescriptorSet descriptors{
+    device,
+    tlas,
+    output_image,
+    material_index_buffer,
+    material_buffer,
+  };
 
   const std::filesystem::path shader_dir{vulkan_rt::cmake::shader_dir};
   const render::vulkan::ShaderModule raygen{device, shader_dir / "raygen.rgen.spv"};

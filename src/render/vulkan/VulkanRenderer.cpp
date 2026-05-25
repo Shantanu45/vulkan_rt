@@ -68,16 +68,18 @@ VulkanRenderer::VulkanRenderer(
   , frames_(device_, 2)
 {
   swapchain_image_layouts_.assign(swapchain_.images().size(), VK_IMAGE_LAYOUT_UNDEFINED);
-  create_ray_tracing_resources();
 }
 
 void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scene &scene, const scene::Camera &camera)
 {
   static_cast<void>(frame_info);
-  static_cast<void>(scene);
   static_cast<void>(camera);
 
-  recreate_swapchain_if_needed();
+  recreate_swapchain_if_needed(scene);
+  if(!ray_tracing_scene_)
+  {
+    create_ray_tracing_resources(scene);
+  }
 
   const auto frame_index = frames_.current_frame_index();
   const auto command_buffer = frames_.command_buffers()[frame_index];
@@ -167,10 +169,10 @@ void VulkanRenderer::wait_idle()
 
 VulkanRenderer::~VulkanRenderer() {}
 
-void VulkanRenderer::create_ray_tracing_resources()
+void VulkanRenderer::create_ray_tracing_resources(const scene::Scene &scene)
 {
   const auto extent = swapchain_.extent();
-  ray_tracing_scene_ = std::make_unique<RayTracingScene>(device_, allocator_);
+  ray_tracing_scene_ = std::make_unique<RayTracingScene>(device_, allocator_, scene);
   output_image_ = std::make_unique<VulkanImage>(device_,
     allocator_,
     ImageCreateInfo{
@@ -180,7 +182,11 @@ void VulkanRenderer::create_ray_tracing_resources()
       .usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
       .memory_usage = VMA_MEMORY_USAGE_AUTO,
     });
-  descriptors_ = std::make_unique<RayTracingDescriptorSet>(device_, ray_tracing_scene_->tlas(), *output_image_);
+  descriptors_ = std::make_unique<RayTracingDescriptorSet>(device_,
+    ray_tracing_scene_->tlas(),
+    *output_image_,
+    ray_tracing_scene_->material_index_buffer(),
+    ray_tracing_scene_->material_buffer());
 
   const std::filesystem::path shader_dir{vulkan_rt::cmake::shader_dir};
   raygen_shader_ = std::make_unique<ShaderModule>(device_, shader_dir / "raygen.rgen.spv");
@@ -205,18 +211,18 @@ void VulkanRenderer::destroy_ray_tracing_resources()
   output_image_layout_ = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
-void VulkanRenderer::recreate_swapchain_if_needed()
+void VulkanRenderer::recreate_swapchain_if_needed(const scene::Scene &scene)
 {
   if(!swapchain_recreate_requested_)
   {
     return;
   }
 
-  recreate_swapchain(pending_extent_);
+  recreate_swapchain(pending_extent_, scene);
   swapchain_recreate_requested_ = false;
 }
 
-void VulkanRenderer::recreate_swapchain(SwapchainExtent extent)
+void VulkanRenderer::recreate_swapchain(SwapchainExtent extent, const scene::Scene &scene)
 {
   device_.wait_idle();
   destroy_ray_tracing_resources();
@@ -224,7 +230,7 @@ void VulkanRenderer::recreate_swapchain(SwapchainExtent extent)
   // Later: pass the old swapchain handle into recreation instead of blunt replacement.
   swapchain_.recreate(context_, device_, extent);
   swapchain_image_layouts_.assign(swapchain_.images().size(), VK_IMAGE_LAYOUT_UNDEFINED);
-  create_ray_tracing_resources();
+  create_ray_tracing_resources(scene);
 }
 
 void VulkanRenderer::trace_to_output_image(VkCommandBuffer command_buffer)

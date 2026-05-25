@@ -24,11 +24,15 @@ void throw_if_failed(VkResult result, const char *operation)
 }
 
 RayTracingDescriptorSet::RayTracingDescriptorSet(
-  const VulkanDevice &device, const AccelerationStructure &tlas, const VulkanImage &output_image)
+  const VulkanDevice &device,
+  const AccelerationStructure &tlas,
+  const VulkanImage &output_image,
+  const VulkanBuffer &material_indices,
+  const VulkanBuffer &materials)
 {
   try
   {
-    create(device, tlas, output_image);
+    create(device, tlas, output_image, material_indices, materials);
   }
   catch(...)
   {
@@ -90,20 +94,34 @@ VkDescriptorSet RayTracingDescriptorSet::descriptor_set() const
 }
 
 void RayTracingDescriptorSet::create(
-  const VulkanDevice &device, const AccelerationStructure &tlas, const VulkanImage &output_image)
+  const VulkanDevice &device,
+  const AccelerationStructure &tlas,
+  const VulkanImage &output_image,
+  const VulkanBuffer &material_indices,
+  const VulkanBuffer &materials)
 {
   device_ = device.device();
 
-  std::array<VkDescriptorSetLayoutBinding, 2> bindings{};
+  std::array<VkDescriptorSetLayoutBinding, 4> bindings{};
   bindings[0].binding = 0;
   bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
   bindings[0].descriptorCount = 1;
-  bindings[0].stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+  bindings[0].stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
 
   bindings[1].binding = 1;
   bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
   bindings[1].descriptorCount = 1;
   bindings[1].stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+
+  bindings[2].binding = 2;
+  bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  bindings[2].descriptorCount = 1;
+  bindings[2].stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+
+  bindings[3].binding = 3;
+  bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  bindings[3].descriptorCount = 1;
+  bindings[3].stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
 
   VkDescriptorSetLayoutCreateInfo layout_info{};
   layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -111,11 +129,13 @@ void RayTracingDescriptorSet::create(
   layout_info.pBindings = bindings.data();
   throw_if_failed(vkCreateDescriptorSetLayout(device_, &layout_info, nullptr, &layout_), "vkCreateDescriptorSetLayout");
 
-  std::array<VkDescriptorPoolSize, 2> pool_sizes{};
+  std::array<VkDescriptorPoolSize, 3> pool_sizes{};
   pool_sizes[0].type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
   pool_sizes[0].descriptorCount = 1;
   pool_sizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
   pool_sizes[1].descriptorCount = 1;
+  pool_sizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  pool_sizes[2].descriptorCount = 2;
 
   VkDescriptorPoolCreateInfo pool_info{};
   pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -157,7 +177,33 @@ void RayTracingDescriptorSet::create(
   output_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
   output_write.pImageInfo = &output_image_info;
 
-  std::array<VkWriteDescriptorSet, 2> writes{tlas_write, output_write};
+  VkDescriptorBufferInfo material_index_info{};
+  material_index_info.buffer = material_indices.buffer();
+  material_index_info.offset = 0;
+  material_index_info.range = material_indices.size();
+
+  VkWriteDescriptorSet material_index_write{};
+  material_index_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  material_index_write.dstSet = descriptor_set_;
+  material_index_write.dstBinding = 2;
+  material_index_write.descriptorCount = 1;
+  material_index_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  material_index_write.pBufferInfo = &material_index_info;
+
+  VkDescriptorBufferInfo material_info{};
+  material_info.buffer = materials.buffer();
+  material_info.offset = 0;
+  material_info.range = materials.size();
+
+  VkWriteDescriptorSet material_write{};
+  material_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  material_write.dstSet = descriptor_set_;
+  material_write.dstBinding = 3;
+  material_write.descriptorCount = 1;
+  material_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  material_write.pBufferInfo = &material_info;
+
+  std::array<VkWriteDescriptorSet, 4> writes{tlas_write, output_write, material_index_write, material_write};
   vkUpdateDescriptorSets(device_, static_cast<std::uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }
 

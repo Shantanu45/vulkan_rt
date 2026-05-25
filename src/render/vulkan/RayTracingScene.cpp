@@ -3,16 +3,25 @@
 #include "OneShotCommandBuffer.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <vector>
 
 namespace vulkan_rt::render::vulkan
 {
-RayTracingScene::RayTracingScene(const VulkanDevice &device, const VulkanAllocator &allocator)
+namespace
 {
-  build_single_triangle(device, allocator);
+struct GpuMaterial
+{
+  float albedo[4]{};
+  float emission[4]{};
+};
+}
+
+RayTracingScene::RayTracingScene(const VulkanDevice &device, const VulkanAllocator &allocator, const scene::Scene &scene)
+{
+  build_scene(device, allocator, scene);
 }
 
 RayTracingScene::~RayTracingScene() = default;
@@ -27,19 +36,63 @@ const AccelerationStructure &RayTracingScene::tlas() const
   return *tlas_;
 }
 
-void RayTracingScene::build_single_triangle(const VulkanDevice &device, const VulkanAllocator &allocator)
+const VulkanBuffer &RayTracingScene::material_index_buffer() const
 {
-  constexpr std::array<float, 9> vertices{
-    -0.5F,
-    -0.5F,
-    0.0F,
-    0.5F,
-    -0.5F,
-    0.0F,
-    0.0F,
-    0.5F,
-    0.0F,
+  if(!material_index_buffer_)
+  {
+    throw std::runtime_error("Ray tracing scene has no material index buffer.");
+  }
+
+  return *material_index_buffer_;
+}
+
+const VulkanBuffer &RayTracingScene::material_buffer() const
+{
+  if(!material_buffer_)
+  {
+    throw std::runtime_error("Ray tracing scene has no material buffer.");
+  }
+
+  return *material_buffer_;
+}
+
+void RayTracingScene::build_scene(const VulkanDevice &device, const VulkanAllocator &allocator, const scene::Scene &scene)
+{
+  if(scene.empty())
+  {
+    throw std::runtime_error("Cannot build a ray tracing scene from an empty scene.");
+  }
+
+  const auto scene_triangles = scene.triangles();
+  const auto scene_materials = scene.materials();
+  triangle_count_ = static_cast<std::uint32_t>(scene_triangles.size());
+
+  std::vector<float> vertices;
+  std::vector<std::uint32_t> material_indices;
+  vertices.reserve(scene_triangles.size() * 9);
+  material_indices.reserve(scene_triangles.size());
+  const auto append_vertex = [&vertices](scene::Vec3 vertex) {
+    vertices.push_back(vertex.x);
+    vertices.push_back(vertex.y);
+    vertices.push_back(vertex.z);
   };
+  for(const auto &triangle : scene_triangles)
+  {
+    append_vertex(triangle.v0);
+    append_vertex(triangle.v1);
+    append_vertex(triangle.v2);
+    material_indices.push_back(triangle.material_index);
+  }
+
+  std::vector<GpuMaterial> materials;
+  materials.reserve(scene_materials.size());
+  for(const auto &material : scene_materials)
+  {
+    materials.push_back(GpuMaterial{
+      .albedo = {material.albedo.x, material.albedo.y, material.albedo.z, material.roughness},
+      .emission = {material.emission.x, material.emission.y, material.emission.z, 0.0F},
+    });
+  }
 
   vertex_buffer_ = std::make_unique<VulkanBuffer>(allocator,
     BufferCreateInfo{
@@ -55,12 +108,38 @@ void RayTracingScene::build_single_triangle(const VulkanDevice &device, const Vu
   vertex_buffer_->flush();
   vertex_buffer_->unmap();
 
+  material_index_buffer_ = std::make_unique<VulkanBuffer>(allocator,
+    BufferCreateInfo{
+      .size = static_cast<VkDeviceSize>(material_indices.size() * sizeof(std::uint32_t)),
+      .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    });
+
+  auto *material_index_data = static_cast<std::uint32_t *>(material_index_buffer_->map());
+  std::copy(material_indices.begin(), material_indices.end(), material_index_data);
+  material_index_buffer_->flush();
+  material_index_buffer_->unmap();
+
+  material_buffer_ = std::make_unique<VulkanBuffer>(allocator,
+    BufferCreateInfo{
+      .size = static_cast<VkDeviceSize>(materials.size() * sizeof(GpuMaterial)),
+      .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    });
+
+  auto *material_data = static_cast<GpuMaterial *>(material_buffer_->map());
+  std::copy(materials.begin(), materials.end(), material_data);
+  material_buffer_->flush();
+  material_buffer_->unmap();
+
   VkAccelerationStructureGeometryTrianglesDataKHR triangles{};
   triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
   triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
   triangles.vertexData.deviceAddress = vertex_buffer_->device_address(device);
   triangles.vertexStride = 3 * sizeof(float);
-  triangles.maxVertex = 3;
+  triangles.maxVertex = triangle_count_ * 3 - 1;
   triangles.indexType = VK_INDEX_TYPE_NONE_KHR;
 
   VkAccelerationStructureGeometryKHR blas_geometry{};
@@ -77,13 +156,12 @@ void RayTracingScene::build_single_triangle(const VulkanDevice &device, const Vu
   blas_build_info.geometryCount = 1;
   blas_build_info.pGeometries = &blas_geometry;
 
-  constexpr std::uint32_t triangle_count = 1;
   VkAccelerationStructureBuildSizesInfoKHR blas_build_sizes{};
   blas_build_sizes.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
   vkGetAccelerationStructureBuildSizesKHR(device.device(),
     VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
     &blas_build_info,
-    &triangle_count,
+    &triangle_count_,
     &blas_build_sizes);
 
   blas_ = std::make_unique<AccelerationStructure>(device,
@@ -106,7 +184,7 @@ void RayTracingScene::build_single_triangle(const VulkanDevice &device, const Vu
   blas_build_info.scratchData.deviceAddress = blas_scratch.device_address(device);
 
   VkAccelerationStructureBuildRangeInfoKHR blas_build_range{};
-  blas_build_range.primitiveCount = triangle_count;
+  blas_build_range.primitiveCount = triangle_count_;
   const VkAccelerationStructureBuildRangeInfoKHR *blas_build_ranges[] = {&blas_build_range};
 
   {

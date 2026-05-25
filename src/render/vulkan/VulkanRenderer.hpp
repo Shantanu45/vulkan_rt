@@ -41,10 +41,10 @@ public:
   void wait_idle() override;
 
 private:
-  void create_ray_tracing_resources();
+  void create_ray_tracing_resources(const scene::Scene &scene);
   void destroy_ray_tracing_resources();
-  void recreate_swapchain_if_needed();
-  void recreate_swapchain(SwapchainExtent extent);
+  void recreate_swapchain_if_needed(const scene::Scene &scene);
+  void recreate_swapchain(SwapchainExtent extent, const scene::Scene &scene);
   void trace_to_output_image(VkCommandBuffer command_buffer);
   void copy_output_image_to_swapchain(VkCommandBuffer command_buffer, std::uint32_t image_index);
 

@@ -3,6 +3,7 @@
 #include <volk.h>
 
 #include "AccelerationStructure.hpp"
+#include "VulkanBuffer.hpp"
 #include "VulkanDevice.hpp"
 #include "VulkanImage.hpp"
 
@@ -12,7 +13,11 @@ class RayTracingDescriptorSet
 {
 public:
   RayTracingDescriptorSet(
-    const VulkanDevice &device, const AccelerationStructure &tlas, const VulkanImage &output_image);
+    const VulkanDevice &device,
+    const AccelerationStructure &tlas,
+    const VulkanImage &output_image,
+    const VulkanBuffer &material_indices,
+    const VulkanBuffer &materials);
   ~RayTracingDescriptorSet();
 
   RayTracingDescriptorSet(const RayTracingDescriptorSet &) = delete;
@@ -26,7 +31,12 @@ public:
   [[nodiscard]] VkDescriptorSet descriptor_set() const;
 
 private:
-  void create(const VulkanDevice &device, const AccelerationStructure &tlas, const VulkanImage &output_image);
+  void create(
+    const VulkanDevice &device,
+    const AccelerationStructure &tlas,
+    const VulkanImage &output_image,
+    const VulkanBuffer &material_indices,
+    const VulkanBuffer &materials);
   void destroy();
 
   VkDevice device_ = VK_NULL_HANDLE;
