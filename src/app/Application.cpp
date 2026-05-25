@@ -1,10 +1,15 @@
 #include "app/Application.hpp"
 
+#include "app/SdlSurfaceProvider.hpp"
+#include "render/vulkan/VulkanRenderer.hpp"
+#include "render/vulkan/VulkanRendererConfig.hpp"
 #include "util/logger.h"
 #include <SDL3/SDL.h>
 #include <fmt/format.h>
 #include <internal_use_only/config.hpp>
 
+#include <cstdint>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -26,6 +31,20 @@ Application::Application(AppConfig config)
 {
   LOGI("Created SDL3 application window: {}x{}", config_.width, config_.height);
   const auto extent = window_.framebuffer_extent();
+  SdlSurfaceProvider surface_provider{window_.native_handle()};
+  const std::string application_name{vulkan_rt::cmake::project_name};
+  render::vulkan::VulkanRendererConfig vulkan_config{
+    .validation = config_.validation,
+    .application_name = application_name.c_str(),
+    .gpu_index = config_.gpu_index,
+  };
+  engine_.set_renderer(std::make_unique<render::vulkan::VulkanRenderer>(
+    vulkan_config,
+    surface_provider,
+    render::vulkan::SwapchainExtent{
+      .width = static_cast<std::uint32_t>(extent.width),
+      .height = static_cast<std::uint32_t>(extent.height),
+    }));
   engine_.resize(extent.width, extent.height);
 }
 

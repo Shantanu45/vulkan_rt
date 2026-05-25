@@ -61,11 +61,15 @@ source_group("render" FILES ${render})
 set(vulkan
     render/vulkan/AccelerationStructure.hpp
     render/vulkan/AccelerationStructure.cpp
+    render/vulkan/OneShotCommandBuffer.hpp
+    render/vulkan/OneShotCommandBuffer.cpp
     render/vulkan/VulkanCheck.hpp
     render/vulkan/VulkanCheck.cpp
     render/vulkan/VulkanRendererConfig.hpp
     render/vulkan/VulkanRenderer.hpp
     render/vulkan/VulkanRenderer.cpp
+    render/vulkan/RayTracingScene.hpp
+    render/vulkan/RayTracingScene.cpp
     render/vulkan/RayTracingPipeline.hpp
     render/vulkan/RayTracingPipeline.cpp
     render/vulkan/RayTracingDescriptorSet.hpp

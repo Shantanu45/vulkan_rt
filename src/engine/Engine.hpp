@@ -18,6 +18,7 @@ public:
   void update(double delta_seconds);
   void render();
   void resize(int width, int height);
+  void set_renderer(std::unique_ptr<render::Renderer> renderer);
 
   [[nodiscard]] const FrameStats &frame_stats() const;
   [[nodiscard]] const EngineConfig &config() const;

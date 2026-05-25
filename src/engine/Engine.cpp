@@ -4,6 +4,7 @@
 #include "util/logger.h"
 
 #include <memory>
+#include <stdexcept>
 #include <utility>
 
 namespace vulkan_rt::engine {
@@ -34,6 +35,16 @@ void Engine::render()
     scene_,
     camera_);
   ++frame_stats_.frame_index;
+}
+
+void Engine::set_renderer(std::unique_ptr<render::Renderer> renderer)
+{
+  if(!renderer)
+  {
+    throw std::runtime_error("Cannot install a null renderer.");
+  }
+
+  renderer_ = std::move(renderer);
 }
 
 void Engine::resize(int width, int height)

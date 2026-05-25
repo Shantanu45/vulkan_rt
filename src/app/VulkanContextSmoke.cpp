@@ -4,6 +4,7 @@
 #include "app/SdlSurfaceProvider.hpp"
 #include "app/Window.hpp"
 #include "render/vulkan/AccelerationStructure.hpp"
+#include "render/vulkan/OneShotCommandBuffer.hpp"
 #include "render/vulkan/VulkanContext.hpp"
 #include "render/vulkan/VulkanDevice.hpp"
 #include "render/vulkan/VulkanFrameResources.hpp"
@@ -29,7 +30,6 @@
 #include <array>
 #include <cstdint>
 #include <filesystem>
-#include <limits>
 #include <stdexcept>
 #include <string>
 
@@ -49,86 +49,6 @@ void throw_if_failed(VkResult result, const char *operation)
     throw std::runtime_error(vulkan_result_message(operation, result));
   }
 }
-
-class OneShotCommandBuffer
-{
-public:
-  explicit OneShotCommandBuffer(const render::vulkan::VulkanDevice &device)
-    : device_(device.device())
-    , graphics_queue_(device.graphics_queue())
-  {
-    VkCommandPoolCreateInfo command_pool_info{};
-    command_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    command_pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    command_pool_info.queueFamilyIndex = device.queue_families().graphics.value();
-    throw_if_failed(vkCreateCommandPool(device_, &command_pool_info, nullptr, &command_pool_), "vkCreateCommandPool");
-
-    VkCommandBufferAllocateInfo command_buffer_info{};
-    command_buffer_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    command_buffer_info.commandPool = command_pool_;
-    command_buffer_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    command_buffer_info.commandBufferCount = 1;
-    throw_if_failed(vkAllocateCommandBuffers(device_, &command_buffer_info, &command_buffer_), "vkAllocateCommandBuffers");
-  }
-
-  ~OneShotCommandBuffer()
-  {
-    if(command_pool_ != VK_NULL_HANDLE)
-    {
-      vkDestroyCommandPool(device_, command_pool_, nullptr);
-    }
-  }
-
-  OneShotCommandBuffer(const OneShotCommandBuffer &) = delete;
-  OneShotCommandBuffer &operator=(const OneShotCommandBuffer &) = delete;
-
-  [[nodiscard]] VkCommandBuffer command_buffer() const
-  {
-    return command_buffer_;
-  }
-
-  void begin() const
-  {
-    VkCommandBufferBeginInfo begin_info{};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    throw_if_failed(vkBeginCommandBuffer(command_buffer_, &begin_info), "vkBeginCommandBuffer");
-  }
-
-  void end_submit_and_wait() const
-  {
-    throw_if_failed(vkEndCommandBuffer(command_buffer_), "vkEndCommandBuffer");
-
-    VkFenceCreateInfo fence_info{};
-    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-
-    VkFence fence = VK_NULL_HANDLE;
-    throw_if_failed(vkCreateFence(device_, &fence_info, nullptr, &fence), "vkCreateFence");
-
-    VkSubmitInfo submit_info{};
-    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submit_info.commandBufferCount = 1;
-    submit_info.pCommandBuffers = &command_buffer_;
-
-    const VkResult submit_result = vkQueueSubmit(graphics_queue_, 1, &submit_info, fence);
-    if(submit_result != VK_SUCCESS)
-    {
-      vkDestroyFence(device_, fence, nullptr);
-      throw_if_failed(submit_result, "vkQueueSubmit");
-    }
-
-    const VkResult wait_result =
-      vkWaitForFences(device_, 1, &fence, VK_TRUE, std::numeric_limits<std::uint64_t>::max());
-    vkDestroyFence(device_, fence, nullptr);
-    throw_if_failed(wait_result, "vkWaitForFences");
-  }
-
-private:
-  VkDevice device_ = VK_NULL_HANDLE;
-  VkQueue graphics_queue_ = VK_NULL_HANDLE;
-  VkCommandPool command_pool_ = VK_NULL_HANDLE;
-  VkCommandBuffer command_buffer_ = VK_NULL_HANDLE;
-};
 
 void transition_image_to_general(VkCommandBuffer command_buffer, VkImage image)
 {
@@ -667,7 +587,7 @@ int vulkan_trace_smoke_test(const AppConfig &config)
   const VkAccelerationStructureBuildRangeInfoKHR *blas_build_ranges[] = {&blas_build_range};
 
   {
-    OneShotCommandBuffer command_buffer{device};
+    render::vulkan::OneShotCommandBuffer command_buffer{device};
     command_buffer.begin();
     vkCmdBuildAccelerationStructuresKHR(command_buffer.command_buffer(), 1, &blas_build_info, blas_build_ranges);
     command_buffer.end_submit_and_wait();
@@ -751,7 +671,7 @@ int vulkan_trace_smoke_test(const AppConfig &config)
   const VkAccelerationStructureBuildRangeInfoKHR *tlas_build_ranges[] = {&tlas_build_range};
 
   {
-    OneShotCommandBuffer command_buffer{device};
+    render::vulkan::OneShotCommandBuffer command_buffer{device};
     command_buffer.begin();
     vkCmdBuildAccelerationStructuresKHR(command_buffer.command_buffer(), 1, &tlas_build_info, tlas_build_ranges);
     command_buffer.end_submit_and_wait();
@@ -787,7 +707,7 @@ int vulkan_trace_smoke_test(const AppConfig &config)
     }};
 
   {
-    OneShotCommandBuffer command_buffer{device};
+    render::vulkan::OneShotCommandBuffer command_buffer{device};
     command_buffer.begin();
     transition_image_to_general(command_buffer.command_buffer(), output_image.image());
     vkCmdBindPipeline(command_buffer.command_buffer(), VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.pipeline());
@@ -1012,7 +932,7 @@ int vulkan_triangle_blas_smoke_test(const AppConfig &config)
   build_range.transformOffset = 0;
   const VkAccelerationStructureBuildRangeInfoKHR *build_ranges[] = {&build_range};
 
-  OneShotCommandBuffer command_buffer{device};
+  render::vulkan::OneShotCommandBuffer command_buffer{device};
   command_buffer.begin();
   vkCmdBuildAccelerationStructuresKHR(command_buffer.command_buffer(), 1, &build_info, build_ranges);
   command_buffer.end_submit_and_wait();
@@ -1132,7 +1052,7 @@ int vulkan_tlas_smoke_test(const AppConfig &config)
   const VkAccelerationStructureBuildRangeInfoKHR *blas_build_ranges[] = {&blas_build_range};
 
   {
-    OneShotCommandBuffer command_buffer{device};
+    render::vulkan::OneShotCommandBuffer command_buffer{device};
     command_buffer.begin();
     vkCmdBuildAccelerationStructuresKHR(command_buffer.command_buffer(), 1, &blas_build_info, blas_build_ranges);
     command_buffer.end_submit_and_wait();
@@ -1216,7 +1136,7 @@ int vulkan_tlas_smoke_test(const AppConfig &config)
   const VkAccelerationStructureBuildRangeInfoKHR *tlas_build_ranges[] = {&tlas_build_range};
 
   {
-    OneShotCommandBuffer command_buffer{device};
+    render::vulkan::OneShotCommandBuffer command_buffer{device};
     command_buffer.begin();
     vkCmdBuildAccelerationStructuresKHR(command_buffer.command_buffer(), 1, &tlas_build_info, tlas_build_ranges);
     command_buffer.end_submit_and_wait();
