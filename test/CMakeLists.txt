@@ -45,6 +45,12 @@ if(VULKAN_RT_ENABLE_VULKAN_CONTEXT_TESTS)
     NAME vulkan.sbt_smoke
     COMMAND ${PROJECT_NAME} --vulkan-sbt-smoke --width 64 --height 64)
   add_test(
+    NAME vulkan.acceleration_structure_smoke
+    COMMAND ${PROJECT_NAME} --vulkan-acceleration-structure-smoke --width 64 --height 64)
+  add_test(
+    NAME vulkan.triangle_blas_smoke
+    COMMAND ${PROJECT_NAME} --vulkan-triangle-blas-smoke --width 64 --height 64)
+  add_test(
     NAME vulkan.clear_smoke
     COMMAND ${PROJECT_NAME} --vulkan-clear-smoke --width 64 --height 64)
   add_test(

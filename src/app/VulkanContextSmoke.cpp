@@ -3,6 +3,7 @@
 #include "app/Application.hpp"
 #include "app/SdlSurfaceProvider.hpp"
 #include "app/Window.hpp"
+#include "render/vulkan/AccelerationStructure.hpp"
 #include "render/vulkan/VulkanContext.hpp"
 #include "render/vulkan/VulkanDevice.hpp"
 #include "render/vulkan/VulkanFrameResources.hpp"
@@ -22,12 +23,111 @@
 #include <fmt/format.h>
 #include <internal_use_only/config.hpp>
 
+#include <array>
 #include <cstdint>
 #include <filesystem>
+#include <limits>
+#include <stdexcept>
 #include <string>
 
 namespace vulkan_rt::app
 {
+namespace
+{
+std::string vulkan_result_message(const char *operation, VkResult result)
+{
+  return std::string{operation} + " failed with VkResult " + std::to_string(static_cast<int>(result));
+}
+
+void throw_if_failed(VkResult result, const char *operation)
+{
+  if(result != VK_SUCCESS)
+  {
+    throw std::runtime_error(vulkan_result_message(operation, result));
+  }
+}
+
+class OneShotCommandBuffer
+{
+public:
+  explicit OneShotCommandBuffer(const render::vulkan::VulkanDevice &device)
+    : device_(device.device())
+    , graphics_queue_(device.graphics_queue())
+  {
+    VkCommandPoolCreateInfo command_pool_info{};
+    command_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    command_pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    command_pool_info.queueFamilyIndex = device.queue_families().graphics.value();
+    throw_if_failed(vkCreateCommandPool(device_, &command_pool_info, nullptr, &command_pool_), "vkCreateCommandPool");
+
+    VkCommandBufferAllocateInfo command_buffer_info{};
+    command_buffer_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    command_buffer_info.commandPool = command_pool_;
+    command_buffer_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    command_buffer_info.commandBufferCount = 1;
+    throw_if_failed(vkAllocateCommandBuffers(device_, &command_buffer_info, &command_buffer_), "vkAllocateCommandBuffers");
+  }
+
+  ~OneShotCommandBuffer()
+  {
+    if(command_pool_ != VK_NULL_HANDLE)
+    {
+      vkDestroyCommandPool(device_, command_pool_, nullptr);
+    }
+  }
+
+  OneShotCommandBuffer(const OneShotCommandBuffer &) = delete;
+  OneShotCommandBuffer &operator=(const OneShotCommandBuffer &) = delete;
+
+  [[nodiscard]] VkCommandBuffer command_buffer() const
+  {
+    return command_buffer_;
+  }
+
+  void begin() const
+  {
+    VkCommandBufferBeginInfo begin_info{};
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    throw_if_failed(vkBeginCommandBuffer(command_buffer_, &begin_info), "vkBeginCommandBuffer");
+  }
+
+  void end_submit_and_wait() const
+  {
+    throw_if_failed(vkEndCommandBuffer(command_buffer_), "vkEndCommandBuffer");
+
+    VkFenceCreateInfo fence_info{};
+    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+    VkFence fence = VK_NULL_HANDLE;
+    throw_if_failed(vkCreateFence(device_, &fence_info, nullptr, &fence), "vkCreateFence");
+
+    VkSubmitInfo submit_info{};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &command_buffer_;
+
+    const VkResult submit_result = vkQueueSubmit(graphics_queue_, 1, &submit_info, fence);
+    if(submit_result != VK_SUCCESS)
+    {
+      vkDestroyFence(device_, fence, nullptr);
+      throw_if_failed(submit_result, "vkQueueSubmit");
+    }
+
+    const VkResult wait_result =
+      vkWaitForFences(device_, 1, &fence, VK_TRUE, std::numeric_limits<std::uint64_t>::max());
+    vkDestroyFence(device_, fence, nullptr);
+    throw_if_failed(wait_result, "vkWaitForFences");
+  }
+
+private:
+  VkDevice device_ = VK_NULL_HANDLE;
+  VkQueue graphics_queue_ = VK_NULL_HANDLE;
+  VkCommandPool command_pool_ = VK_NULL_HANDLE;
+  VkCommandBuffer command_buffer_ = VK_NULL_HANDLE;
+};
+}
+
 int vulkan_context_smoke_test(const AppConfig &config)
 {
   SdlRuntime sdl_runtime;
@@ -341,6 +441,168 @@ int vulkan_sbt_smoke_test(const AppConfig &config)
     sbt.hit_region().deviceAddress,
     sbt.hit_region().stride,
     sbt.hit_region().size);
+
+  device.wait_idle();
+  return 0;
+}
+
+int vulkan_acceleration_structure_smoke_test(const AppConfig &config)
+{
+  SdlRuntime sdl_runtime;
+  Window window{
+    fmt::format("{} Vulkan acceleration structure smoke", vulkan_rt::cmake::project_name),
+    config.width,
+    config.height,
+  };
+
+  SdlSurfaceProvider surface_provider{window.native_handle()};
+  const std::string application_name{vulkan_rt::cmake::project_name};
+  render::vulkan::VulkanRendererConfig vulkan_config{
+    .validation = config.validation,
+    .application_name = application_name.c_str(),
+    .gpu_index = config.gpu_index,
+  };
+
+  render::vulkan::VulkanContext context{vulkan_config, surface_provider};
+  render::vulkan::VulkanDevice device{context, vulkan_config};
+  render::vulkan::VulkanAllocator allocator{context, device};
+
+  const render::vulkan::AccelerationStructure acceleration_structure{
+    device,
+    allocator,
+    render::vulkan::AccelerationStructureCreateInfo{
+      .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+      .size = 4096,
+    },
+  };
+
+  LOGI("Vulkan acceleration structure smoke passed:");
+  LOGI("  handle created: {}", acceleration_structure.acceleration_structure() != VK_NULL_HANDLE);
+  LOGI("  backing buffer created: {}", acceleration_structure.backing_buffer() != VK_NULL_HANDLE);
+  LOGI("  size: {} bytes", acceleration_structure.size());
+  LOGI("  device address: {}", acceleration_structure.device_address());
+
+  device.wait_idle();
+  return 0;
+}
+
+int vulkan_triangle_blas_smoke_test(const AppConfig &config)
+{
+  SdlRuntime sdl_runtime;
+  Window window{
+    fmt::format("{} Vulkan triangle BLAS smoke", vulkan_rt::cmake::project_name),
+    config.width,
+    config.height,
+  };
+
+  SdlSurfaceProvider surface_provider{window.native_handle()};
+  const std::string application_name{vulkan_rt::cmake::project_name};
+  render::vulkan::VulkanRendererConfig vulkan_config{
+    .validation = config.validation,
+    .application_name = application_name.c_str(),
+    .gpu_index = config.gpu_index,
+  };
+
+  render::vulkan::VulkanContext context{vulkan_config, surface_provider};
+  render::vulkan::VulkanDevice device{context, vulkan_config};
+  render::vulkan::VulkanAllocator allocator{context, device};
+
+  constexpr std::array<float, 9> vertices{
+    0.0F,
+    -0.5F,
+    0.0F,
+    0.5F,
+    0.5F,
+    0.0F,
+    -0.5F,
+    0.5F,
+    0.0F,
+  };
+
+  render::vulkan::VulkanBuffer vertex_buffer{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = static_cast<VkDeviceSize>(vertices.size() * sizeof(float)),
+      .usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    }};
+
+  auto *vertex_data = static_cast<float *>(vertex_buffer.map());
+  std::copy(vertices.begin(), vertices.end(), vertex_data);
+  vertex_buffer.flush();
+  vertex_buffer.unmap();
+
+  VkAccelerationStructureGeometryTrianglesDataKHR triangles{};
+  triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+  triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+  triangles.vertexData.deviceAddress = vertex_buffer.device_address(device);
+  triangles.vertexStride = 3 * sizeof(float);
+  triangles.maxVertex = 3;
+  triangles.indexType = VK_INDEX_TYPE_NONE_KHR;
+
+  VkAccelerationStructureGeometryKHR geometry{};
+  geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+  geometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+  geometry.geometry.triangles = triangles;
+  geometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+
+  VkAccelerationStructureBuildGeometryInfoKHR build_info{};
+  build_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+  build_info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+  build_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+  build_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+  build_info.geometryCount = 1;
+  build_info.pGeometries = &geometry;
+
+  constexpr std::uint32_t primitive_count = 1;
+  VkAccelerationStructureBuildSizesInfoKHR build_sizes{};
+  build_sizes.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+  vkGetAccelerationStructureBuildSizesKHR(device.device(),
+    VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+    &build_info,
+    &primitive_count,
+    &build_sizes);
+
+  render::vulkan::AccelerationStructure blas{
+    device,
+    allocator,
+    render::vulkan::AccelerationStructureCreateInfo{
+      .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+      .size = build_sizes.accelerationStructureSize,
+    },
+  };
+
+  render::vulkan::VulkanBuffer scratch_buffer{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = build_sizes.buildScratchSize,
+      .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = 0,
+    }};
+
+  build_info.dstAccelerationStructure = blas.acceleration_structure();
+  build_info.scratchData.deviceAddress = scratch_buffer.device_address(device);
+
+  VkAccelerationStructureBuildRangeInfoKHR build_range{};
+  build_range.primitiveCount = primitive_count;
+  build_range.primitiveOffset = 0;
+  build_range.firstVertex = 0;
+  build_range.transformOffset = 0;
+  const VkAccelerationStructureBuildRangeInfoKHR *build_ranges[] = {&build_range};
+
+  OneShotCommandBuffer command_buffer{device};
+  command_buffer.begin();
+  vkCmdBuildAccelerationStructuresKHR(command_buffer.command_buffer(), 1, &build_info, build_ranges);
+  command_buffer.end_submit_and_wait();
+
+  LOGI("Vulkan triangle BLAS smoke passed:");
+  LOGI("  vertex buffer address: {}", vertex_buffer.device_address(device));
+  LOGI("  BLAS size: {} bytes", blas.size());
+  LOGI("  BLAS device address: {}", blas.device_address());
+  LOGI("  scratch size: {} bytes", scratch_buffer.size());
 
   device.wait_idle();
   return 0;

@@ -46,6 +46,12 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_flag("--vulkan-sbt-smoke",
     config.vulkan_sbt_smoke,
     "Create a shader binding table for the minimal Vulkan ray tracing pipeline.");
+  cli.add_flag("--vulkan-acceleration-structure-smoke",
+    config.vulkan_acceleration_structure_smoke,
+    "Create a minimal Vulkan acceleration structure handle backed by VMA memory.");
+  cli.add_flag("--vulkan-triangle-blas-smoke",
+    config.vulkan_triangle_blas_smoke,
+    "Build a bottom-level acceleration structure for one triangle.");
   cli.add_flag("--vulkan-buffer-smoke",
     config.vulkan_buffer_smoke,
     "Create VulkanAllocator and allocate a staging and device-local buffer via VMA.");
