@@ -93,6 +93,18 @@ VkDescriptorSet RayTracingDescriptorSet::descriptor_set() const
   return descriptor_set_;
 }
 
+/**
+ * Shader binding 0 = TLAS
+ * Shader binding 1 = output image
+ * Shader binding 2 = triangle -> material index buffer
+ * Shader binding 3 = material data buffer.
+ * 
+ * \param device
+ * \param tlas
+ * \param output_image
+ * \param material_indices
+ * \param materials
+ */
 void RayTracingDescriptorSet::create(
   const VulkanDevice &device,
   const AccelerationStructure &tlas,
@@ -129,6 +141,7 @@ void RayTracingDescriptorSet::create(
   layout_info.pBindings = bindings.data();
   throw_if_failed(vkCreateDescriptorSetLayout(device_, &layout_info, nullptr, &layout_), "vkCreateDescriptorSetLayout");
 
+  // A descriptor pool is where descriptor sets are allocated from. Here we say the pool must have enough descriptors fo
   std::array<VkDescriptorPoolSize, 3> pool_sizes{};
   pool_sizes[0].type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
   pool_sizes[0].descriptorCount = 1;
@@ -151,6 +164,7 @@ void RayTracingDescriptorSet::create(
   allocate_info.pSetLayouts = &layout_;
   throw_if_failed(vkAllocateDescriptorSets(device_, &allocate_info, &descriptor_set_), "vkAllocateDescriptorSets");
 
+  // Write Binding 0: TLAS
   VkWriteDescriptorSetAccelerationStructureKHR acceleration_structure_write{};
   acceleration_structure_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
   acceleration_structure_write.accelerationStructureCount = 1;
@@ -165,6 +179,7 @@ void RayTracingDescriptorSet::create(
   tlas_write.descriptorCount = 1;
   tlas_write.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 
+  // Write Binding 1: Output Image
   VkDescriptorImageInfo output_image_info{};
   output_image_info.imageView = output_image.image_view();
   output_image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -177,6 +192,7 @@ void RayTracingDescriptorSet::create(
   output_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
   output_write.pImageInfo = &output_image_info;
 
+  // Write Binding 2: Material Indices
   VkDescriptorBufferInfo material_index_info{};
   material_index_info.buffer = material_indices.buffer();
   material_index_info.offset = 0;
@@ -190,6 +206,7 @@ void RayTracingDescriptorSet::create(
   material_index_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   material_index_write.pBufferInfo = &material_index_info;
 
+  // Write Binding 3: Materials
   VkDescriptorBufferInfo material_info{};
   material_info.buffer = materials.buffer();
   material_info.offset = 0;
@@ -203,7 +220,12 @@ void RayTracingDescriptorSet::create(
   material_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   material_write.pBufferInfo = &material_info;
 
-  std::array<VkWriteDescriptorSet, 4> writes{tlas_write, output_write, material_index_write, material_write};
+  // Update the Descriptor Set
+  std::array<VkWriteDescriptorSet, 4> writes{
+      tlas_write, 
+      output_write, 
+      material_index_write, 
+      material_write};
   vkUpdateDescriptorSets(device_, static_cast<std::uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }
 

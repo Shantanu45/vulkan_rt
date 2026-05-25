@@ -332,6 +332,9 @@ TLAS:
   instance 2 -> BLAS B at transform C
 So if you have one mesh and want to place it 100 times in the world, you can build the BLAS once and create 100 TLAS
 instances pointing to it.
+
+https://docs.vulkan.org/tutorial/latest/courses/18_Ray_tracing/02_Acceleration_structures.html
+https://nvpro-samples.github.io/vk_raytracing_tutorial_KHR/
 */
 
 
