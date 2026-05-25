@@ -11,6 +11,7 @@ int vulkan_frame_smoke_test(const AppConfig &config);
 int vulkan_shader_smoke_test(const AppConfig &config);
 int vulkan_rt_pipeline_smoke_test(const AppConfig &config);
 int vulkan_sbt_smoke_test(const AppConfig &config);
+int vulkan_rt_descriptor_smoke_test(const AppConfig &config);
 int vulkan_acceleration_structure_smoke_test(const AppConfig &config);
 int vulkan_triangle_blas_smoke_test(const AppConfig &config);
 int vulkan_tlas_smoke_test(const AppConfig &config);

@@ -8,9 +8,11 @@
 #include "render/vulkan/VulkanDevice.hpp"
 #include "render/vulkan/VulkanFrameResources.hpp"
 #include "render/vulkan/RayTracingPipeline.hpp"
+#include "render/vulkan/RayTracingDescriptorSet.hpp"
 #include "render/vulkan/ShaderBindingTable.hpp"
 #include "render/vulkan/VulkanAllocator.hpp"
 #include "render/vulkan/VulkanBuffer.hpp"
+#include "render/vulkan/VulkanImage.hpp"
 #include "render/vulkan/VulkanRenderer.hpp"
 #include "render/vulkan/VulkanRendererConfig.hpp"
 #include "render/vulkan/ShaderModule.hpp"
@@ -441,6 +443,61 @@ int vulkan_sbt_smoke_test(const AppConfig &config)
     sbt.hit_region().deviceAddress,
     sbt.hit_region().stride,
     sbt.hit_region().size);
+
+  device.wait_idle();
+  return 0;
+}
+
+int vulkan_rt_descriptor_smoke_test(const AppConfig &config)
+{
+  SdlRuntime sdl_runtime;
+  Window window{
+    fmt::format("{} Vulkan RT descriptor smoke", vulkan_rt::cmake::project_name),
+    config.width,
+    config.height,
+  };
+
+  SdlSurfaceProvider surface_provider{window.native_handle()};
+  const std::string application_name{vulkan_rt::cmake::project_name};
+  render::vulkan::VulkanRendererConfig vulkan_config{
+    .validation = config.validation,
+    .application_name = application_name.c_str(),
+    .gpu_index = config.gpu_index,
+  };
+
+  render::vulkan::VulkanContext context{vulkan_config, surface_provider};
+  render::vulkan::VulkanDevice device{context, vulkan_config};
+  render::vulkan::VulkanAllocator allocator{context, device};
+
+  const render::vulkan::AccelerationStructure tlas{
+    device,
+    allocator,
+    render::vulkan::AccelerationStructureCreateInfo{
+      .type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
+      .size = 4096,
+    },
+  };
+
+  const render::vulkan::VulkanImage output_image{
+    device,
+    allocator,
+    render::vulkan::ImageCreateInfo{
+      .width = 64,
+      .height = 64,
+      .format = VK_FORMAT_R8G8B8A8_UNORM,
+      .usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+    },
+  };
+
+  const render::vulkan::RayTracingDescriptorSet descriptors{device, tlas, output_image};
+
+  LOGI("Vulkan ray tracing descriptor smoke passed:");
+  LOGI("  descriptor set layout created: {}", descriptors.layout() != VK_NULL_HANDLE);
+  LOGI("  descriptor pool created: {}", descriptors.pool() != VK_NULL_HANDLE);
+  LOGI("  descriptor set allocated: {}", descriptors.descriptor_set() != VK_NULL_HANDLE);
+  LOGI("  TLAS handle: {}", tlas.acceleration_structure() != VK_NULL_HANDLE);
+  LOGI("  output image view: {}", output_image.image_view() != VK_NULL_HANDLE);
 
   device.wait_idle();
   return 0;

@@ -68,6 +68,8 @@ set(vulkan
     render/vulkan/VulkanRenderer.cpp
     render/vulkan/RayTracingPipeline.hpp
     render/vulkan/RayTracingPipeline.cpp
+    render/vulkan/RayTracingDescriptorSet.hpp
+    render/vulkan/RayTracingDescriptorSet.cpp
     render/vulkan/ShaderBindingTable.hpp
     render/vulkan/ShaderBindingTable.cpp
     render/vulkan/ShaderModule.hpp
@@ -76,6 +78,8 @@ set(vulkan
     render/vulkan/VulkanAllocator.cpp
     render/vulkan/VulkanBuffer.hpp
     render/vulkan/VulkanBuffer.cpp
+    render/vulkan/VulkanImage.hpp
+    render/vulkan/VulkanImage.cpp
     render/vulkan/VulkanContext.hpp
     render/vulkan/VulkanContext.cpp
     render/vulkan/VulkanDevice.hpp
