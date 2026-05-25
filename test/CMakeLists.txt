@@ -70,6 +70,7 @@ endif()
 add_executable(tests
     camera_tests.cpp
     engine_tests.cpp
+    ray_tracing_camera_tests.cpp
     render_tests.cpp
     scene_tests.cpp
     test_main.cpp
