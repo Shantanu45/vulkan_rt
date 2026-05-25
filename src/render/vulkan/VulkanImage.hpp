@@ -25,9 +25,6 @@ public:
   VulkanImage(const VulkanDevice &device, const VulkanAllocator &allocator, const ImageCreateInfo &create_info);
   ~VulkanImage();
 
-  VulkanImage(const VulkanImage &) = delete;
-  VulkanImage &operator=(const VulkanImage &) = delete;
-
   VulkanImage(VulkanImage &&other) noexcept;
   VulkanImage &operator=(VulkanImage &&other) noexcept;
 
@@ -35,6 +32,9 @@ public:
   [[nodiscard]] VkImageView image_view() const;
   [[nodiscard]] VkFormat format() const;
   [[nodiscard]] VkExtent2D extent() const;
+
+  VulkanImage(const VulkanImage &) = delete;
+  VulkanImage &operator=(const VulkanImage &) = delete;
 
 private:
   void create(const VulkanDevice &device, const VulkanAllocator &allocator, const ImageCreateInfo &create_info);

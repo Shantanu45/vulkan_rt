@@ -20,15 +20,15 @@ public:
     const VulkanBuffer &materials);
   ~RayTracingDescriptorSet();
 
-  RayTracingDescriptorSet(const RayTracingDescriptorSet &) = delete;
-  RayTracingDescriptorSet &operator=(const RayTracingDescriptorSet &) = delete;
-
   RayTracingDescriptorSet(RayTracingDescriptorSet &&other) noexcept;
   RayTracingDescriptorSet &operator=(RayTracingDescriptorSet &&other) noexcept;
 
   [[nodiscard]] VkDescriptorSetLayout layout() const;
   [[nodiscard]] VkDescriptorPool pool() const;
   [[nodiscard]] VkDescriptorSet descriptor_set() const;
+
+  RayTracingDescriptorSet(const RayTracingDescriptorSet &) = delete;
+  RayTracingDescriptorSet &operator=(const RayTracingDescriptorSet &) = delete;
 
 private:
   void create(

@@ -28,9 +28,6 @@ public:
   VulkanFrameResources(const VulkanDevice &device, std::uint32_t frames_in_flight);
   ~VulkanFrameResources();
 
-  VulkanFrameResources(const VulkanFrameResources &) = delete;
-  VulkanFrameResources &operator=(const VulkanFrameResources &) = delete;
-
   VulkanFrameResources(VulkanFrameResources &&other) noexcept;
   VulkanFrameResources &operator=(VulkanFrameResources &&other) noexcept;
 
@@ -43,6 +40,9 @@ public:
   [[nodiscard]] std::span<const VkFence> in_flight_fences() const;
 
   void advance_frame();
+  
+  VulkanFrameResources(const VulkanFrameResources &) = delete;
+  VulkanFrameResources &operator=(const VulkanFrameResources &) = delete;
 
 private:
   void create(const VulkanDevice &device, std::uint32_t frames_in_flight);
