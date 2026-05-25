@@ -43,6 +43,9 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_flag("--vulkan-rt-pipeline-smoke",
     config.vulkan_rt_pipeline_smoke,
     "Create a minimal Vulkan ray tracing pipeline from the compiled shader modules.");
+  cli.add_flag("--vulkan-buffer-smoke",
+    config.vulkan_buffer_smoke,
+    "Create VulkanAllocator and allocate a staging and device-local buffer via VMA.");
   cli.add_flag("--vulkan-clear-smoke",
     config.vulkan_clear_smoke,
     "Create VulkanRenderer, clear/present a few frames, and exit.");

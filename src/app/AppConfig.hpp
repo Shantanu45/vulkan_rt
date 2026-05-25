@@ -20,6 +20,7 @@ struct AppConfig
   bool vulkan_frame_smoke = false;
   bool vulkan_shader_smoke = false;
   bool vulkan_rt_pipeline_smoke = false;
+  bool vulkan_buffer_smoke = false;
   bool vulkan_clear_smoke = false;
   bool vulkan_resize_smoke = false;
 };

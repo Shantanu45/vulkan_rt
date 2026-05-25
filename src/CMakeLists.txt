@@ -68,6 +68,10 @@ set(vulkan
     render/vulkan/RayTracingPipeline.cpp
     render/vulkan/ShaderModule.hpp
     render/vulkan/ShaderModule.cpp
+    render/vulkan/VulkanAllocator.hpp
+    render/vulkan/VulkanAllocator.cpp
+    render/vulkan/VulkanBuffer.hpp
+    render/vulkan/VulkanBuffer.cpp
     render/vulkan/VulkanContext.hpp
     render/vulkan/VulkanContext.cpp
     render/vulkan/VulkanDevice.hpp
@@ -158,6 +162,7 @@ endif()
 find_package(volk REQUIRED)
 find_package(libassert REQUIRED)
 find_package(sdl3 REQUIRED)
+find_package(VulkanMemoryAllocator REQUIRED)
 
 target_link_libraries(
   ${PROJECT_NAME}
@@ -170,7 +175,13 @@ target_link_libraries(
           volk::volk
           libassert::assert
           SDL3::SDL3
+          GPUOpen::VulkanMemoryAllocator
           ${vulkan_rt_sdl_target})
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+  VMA_STATIC_VULKAN_FUNCTIONS=0
+  VMA_DYNAMIC_VULKAN_FUNCTIONS=1
+)
 
 
 vulkan_rt_configure_linker(${PROJECT_NAME})

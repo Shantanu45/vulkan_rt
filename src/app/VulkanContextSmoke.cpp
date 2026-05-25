@@ -7,6 +7,8 @@
 #include "render/vulkan/VulkanDevice.hpp"
 #include "render/vulkan/VulkanFrameResources.hpp"
 #include "render/vulkan/RayTracingPipeline.hpp"
+#include "render/vulkan/VulkanAllocator.hpp"
+#include "render/vulkan/VulkanBuffer.hpp"
 #include "render/vulkan/VulkanRenderer.hpp"
 #include "render/vulkan/VulkanRendererConfig.hpp"
 #include "render/vulkan/ShaderModule.hpp"
@@ -196,6 +198,60 @@ int vulkan_shader_smoke_test(const AppConfig &config)
   LOGI("  raygen module created: {}", raygen.module() != VK_NULL_HANDLE);
   LOGI("  miss module created: {}", miss.module() != VK_NULL_HANDLE);
   LOGI("  closest hit module created: {}", closest_hit.module() != VK_NULL_HANDLE);
+
+  device.wait_idle();
+  return 0;
+}
+
+int vulkan_buffer_smoke_test(const AppConfig &config)
+{
+  SdlRuntime sdl_runtime;
+  Window window{
+    fmt::format("{} Vulkan buffer smoke", vulkan_rt::cmake::project_name),
+    config.width,
+    config.height,
+  };
+
+  SdlSurfaceProvider surface_provider{window.native_handle()};
+  const std::string application_name{vulkan_rt::cmake::project_name};
+  render::vulkan::VulkanRendererConfig vulkan_config{
+    .validation = config.validation,
+    .application_name = application_name.c_str(),
+    .gpu_index = config.gpu_index,
+  };
+
+  render::vulkan::VulkanContext context{vulkan_config, surface_provider};
+  render::vulkan::VulkanDevice device{context, vulkan_config};
+  render::vulkan::VulkanAllocator allocator{context, device};
+
+  render::vulkan::VulkanBuffer staging{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = 256,
+      .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    }};
+
+  auto *data = static_cast<std::uint8_t *>(staging.map());
+  for(std::uint32_t i = 0; i < 256; ++i) { data[i] = static_cast<std::uint8_t>(i); }
+  staging.unmap();
+
+  render::vulkan::VulkanBuffer device_buffer{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = 1024,
+      .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = 0,
+    }};
+
+  LOGI("Vulkan buffer smoke passed:");
+  LOGI("  allocator created: {}", allocator.allocator() != VK_NULL_HANDLE);
+  LOGI("  staging buffer handle: {}", staging.buffer() != VK_NULL_HANDLE);
+  LOGI("  staging size: {} bytes", staging.size());
+  LOGI("  device buffer handle: {}", device_buffer.buffer() != VK_NULL_HANDLE);
+  LOGI("  device buffer size: {} bytes", device_buffer.size());
 
   device.wait_idle();
   return 0;
