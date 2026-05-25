@@ -49,6 +49,9 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_flag("--vulkan-rt-descriptor-smoke",
     config.vulkan_rt_descriptor_smoke,
     "Create ray tracing descriptors for a TLAS and storage output image.");
+  cli.add_flag("--vulkan-trace-smoke",
+    config.vulkan_trace_smoke,
+    "Dispatch a minimal offscreen vkCmdTraceRaysKHR pass into a storage image.");
   cli.add_flag("--vulkan-acceleration-structure-smoke",
     config.vulkan_acceleration_structure_smoke,
     "Create a minimal Vulkan acceleration structure handle backed by VMA memory.");

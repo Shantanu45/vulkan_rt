@@ -76,6 +76,10 @@ int main(int argc, char **argv)
     return vulkan_rt::app::vulkan_rt_descriptor_smoke_test(config);
   }
 
+  if (config.vulkan_trace_smoke) {
+    return vulkan_rt::app::vulkan_trace_smoke_test(config);
+  }
+
   if (config.vulkan_acceleration_structure_smoke) {
     return vulkan_rt::app::vulkan_acceleration_structure_smoke_test(config);
   }

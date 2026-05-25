@@ -25,6 +25,7 @@
 #include <fmt/format.h>
 #include <internal_use_only/config.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <filesystem>
@@ -128,6 +129,35 @@ private:
   VkCommandPool command_pool_ = VK_NULL_HANDLE;
   VkCommandBuffer command_buffer_ = VK_NULL_HANDLE;
 };
+
+void transition_image_to_general(VkCommandBuffer command_buffer, VkImage image)
+{
+  VkImageMemoryBarrier barrier{};
+  barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+  barrier.srcAccessMask = 0;
+  barrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+  barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.image = image;
+  barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  barrier.subresourceRange.baseMipLevel = 0;
+  barrier.subresourceRange.levelCount = 1;
+  barrier.subresourceRange.baseArrayLayer = 0;
+  barrier.subresourceRange.layerCount = 1;
+
+  vkCmdPipelineBarrier(command_buffer,
+    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+    VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+    0,
+    0,
+    nullptr,
+    0,
+    nullptr,
+    1,
+    &barrier);
+}
 }
 
 int vulkan_context_smoke_test(const AppConfig &config)
@@ -498,6 +528,257 @@ int vulkan_rt_descriptor_smoke_test(const AppConfig &config)
   LOGI("  descriptor set allocated: {}", descriptors.descriptor_set() != VK_NULL_HANDLE);
   LOGI("  TLAS handle: {}", tlas.acceleration_structure() != VK_NULL_HANDLE);
   LOGI("  output image view: {}", output_image.image_view() != VK_NULL_HANDLE);
+
+  device.wait_idle();
+  return 0;
+}
+
+int vulkan_trace_smoke_test(const AppConfig &config)
+{
+  SdlRuntime sdl_runtime;
+  Window window{
+    fmt::format("{} Vulkan trace smoke", vulkan_rt::cmake::project_name),
+    config.width,
+    config.height,
+  };
+
+  SdlSurfaceProvider surface_provider{window.native_handle()};
+  const std::string application_name{vulkan_rt::cmake::project_name};
+  render::vulkan::VulkanRendererConfig vulkan_config{
+    .validation = config.validation,
+    .application_name = application_name.c_str(),
+    .gpu_index = config.gpu_index,
+  };
+
+  render::vulkan::VulkanContext context{vulkan_config, surface_provider};
+  render::vulkan::VulkanDevice device{context, vulkan_config};
+  render::vulkan::VulkanAllocator allocator{context, device};
+
+  constexpr std::array<float, 9> vertices{
+    0.0F,
+    -0.5F,
+    0.0F,
+    0.5F,
+    0.5F,
+    0.0F,
+    -0.5F,
+    0.5F,
+    0.0F,
+  };
+
+  render::vulkan::VulkanBuffer vertex_buffer{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = static_cast<VkDeviceSize>(vertices.size() * sizeof(float)),
+      .usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    }};
+
+  auto *vertex_data = static_cast<float *>(vertex_buffer.map());
+  std::copy(vertices.begin(), vertices.end(), vertex_data);
+  vertex_buffer.flush();
+  vertex_buffer.unmap();
+
+  VkAccelerationStructureGeometryTrianglesDataKHR triangles{};
+  triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+  triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+  triangles.vertexData.deviceAddress = vertex_buffer.device_address(device);
+  triangles.vertexStride = 3 * sizeof(float);
+  triangles.maxVertex = 3;
+  triangles.indexType = VK_INDEX_TYPE_NONE_KHR;
+
+  VkAccelerationStructureGeometryKHR blas_geometry{};
+  blas_geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+  blas_geometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+  blas_geometry.geometry.triangles = triangles;
+  blas_geometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+
+  VkAccelerationStructureBuildGeometryInfoKHR blas_build_info{};
+  blas_build_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+  blas_build_info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+  blas_build_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+  blas_build_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+  blas_build_info.geometryCount = 1;
+  blas_build_info.pGeometries = &blas_geometry;
+
+  constexpr std::uint32_t triangle_count = 1;
+  VkAccelerationStructureBuildSizesInfoKHR blas_build_sizes{};
+  blas_build_sizes.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+  vkGetAccelerationStructureBuildSizesKHR(device.device(),
+    VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+    &blas_build_info,
+    &triangle_count,
+    &blas_build_sizes);
+
+  render::vulkan::AccelerationStructure blas{
+    device,
+    allocator,
+    render::vulkan::AccelerationStructureCreateInfo{
+      .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+      .size = blas_build_sizes.accelerationStructureSize,
+    },
+  };
+
+  render::vulkan::VulkanBuffer blas_scratch{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = blas_build_sizes.buildScratchSize,
+      .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = 0,
+    }};
+
+  blas_build_info.dstAccelerationStructure = blas.acceleration_structure();
+  blas_build_info.scratchData.deviceAddress = blas_scratch.device_address(device);
+
+  VkAccelerationStructureBuildRangeInfoKHR blas_build_range{};
+  blas_build_range.primitiveCount = triangle_count;
+  const VkAccelerationStructureBuildRangeInfoKHR *blas_build_ranges[] = {&blas_build_range};
+
+  {
+    OneShotCommandBuffer command_buffer{device};
+    command_buffer.begin();
+    vkCmdBuildAccelerationStructuresKHR(command_buffer.command_buffer(), 1, &blas_build_info, blas_build_ranges);
+    command_buffer.end_submit_and_wait();
+  }
+
+  VkAccelerationStructureInstanceKHR instance{};
+  instance.transform.matrix[0][0] = 1.0F;
+  instance.transform.matrix[1][1] = 1.0F;
+  instance.transform.matrix[2][2] = 1.0F;
+  instance.instanceCustomIndex = 0;
+  instance.mask = 0xFF;
+  instance.instanceShaderBindingTableRecordOffset = 0;
+  instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+  instance.accelerationStructureReference = blas.device_address();
+
+  render::vulkan::VulkanBuffer instance_buffer{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = sizeof(VkAccelerationStructureInstanceKHR),
+      .usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    }};
+
+  auto *instance_data = static_cast<VkAccelerationStructureInstanceKHR *>(instance_buffer.map());
+  *instance_data = instance;
+  instance_buffer.flush();
+  instance_buffer.unmap();
+
+  VkAccelerationStructureGeometryInstancesDataKHR instances_data{};
+  instances_data.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+  instances_data.arrayOfPointers = VK_FALSE;
+  instances_data.data.deviceAddress = instance_buffer.device_address(device);
+
+  VkAccelerationStructureGeometryKHR tlas_geometry{};
+  tlas_geometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+  tlas_geometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+  tlas_geometry.geometry.instances = instances_data;
+
+  VkAccelerationStructureBuildGeometryInfoKHR tlas_build_info{};
+  tlas_build_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+  tlas_build_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+  tlas_build_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+  tlas_build_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+  tlas_build_info.geometryCount = 1;
+  tlas_build_info.pGeometries = &tlas_geometry;
+
+  constexpr std::uint32_t instance_count = 1;
+  VkAccelerationStructureBuildSizesInfoKHR tlas_build_sizes{};
+  tlas_build_sizes.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+  vkGetAccelerationStructureBuildSizesKHR(device.device(),
+    VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+    &tlas_build_info,
+    &instance_count,
+    &tlas_build_sizes);
+
+  render::vulkan::AccelerationStructure tlas{
+    device,
+    allocator,
+    render::vulkan::AccelerationStructureCreateInfo{
+      .type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
+      .size = tlas_build_sizes.accelerationStructureSize,
+    },
+  };
+
+  render::vulkan::VulkanBuffer tlas_scratch{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = tlas_build_sizes.buildScratchSize,
+      .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = 0,
+    }};
+
+  tlas_build_info.dstAccelerationStructure = tlas.acceleration_structure();
+  tlas_build_info.scratchData.deviceAddress = tlas_scratch.device_address(device);
+
+  VkAccelerationStructureBuildRangeInfoKHR tlas_build_range{};
+  tlas_build_range.primitiveCount = instance_count;
+  const VkAccelerationStructureBuildRangeInfoKHR *tlas_build_ranges[] = {&tlas_build_range};
+
+  {
+    OneShotCommandBuffer command_buffer{device};
+    command_buffer.begin();
+    vkCmdBuildAccelerationStructuresKHR(command_buffer.command_buffer(), 1, &tlas_build_info, tlas_build_ranges);
+    command_buffer.end_submit_and_wait();
+  }
+
+  render::vulkan::VulkanImage output_image{
+    device,
+    allocator,
+    render::vulkan::ImageCreateInfo{
+      .width = 64,
+      .height = 64,
+      .format = VK_FORMAT_R8G8B8A8_UNORM,
+      .usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+    },
+  };
+
+  const render::vulkan::RayTracingDescriptorSet descriptors{device, tlas, output_image};
+
+  const std::filesystem::path shader_dir{vulkan_rt::cmake::shader_dir};
+  const render::vulkan::ShaderModule raygen{device, shader_dir / "raygen.rgen.spv"};
+  const render::vulkan::ShaderModule miss{device, shader_dir / "miss.rmiss.spv"};
+  const render::vulkan::ShaderModule closest_hit{device, shader_dir / "closesthit.rchit.spv"};
+  const render::vulkan::RayTracingPipeline pipeline{device, raygen, miss, closest_hit, descriptors.layout()};
+  const render::vulkan::ShaderBindingTable sbt{device, allocator, pipeline};
+
+  {
+    OneShotCommandBuffer command_buffer{device};
+    command_buffer.begin();
+    transition_image_to_general(command_buffer.command_buffer(), output_image.image());
+    vkCmdBindPipeline(command_buffer.command_buffer(), VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline.pipeline());
+    const auto descriptor_set = descriptors.descriptor_set();
+    vkCmdBindDescriptorSets(command_buffer.command_buffer(),
+      VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
+      pipeline.layout(),
+      0,
+      1,
+      &descriptor_set,
+      0,
+      nullptr);
+    vkCmdTraceRaysKHR(command_buffer.command_buffer(),
+      &sbt.raygen_region(),
+      &sbt.miss_region(),
+      &sbt.hit_region(),
+      &sbt.callable_region(),
+      output_image.extent().width,
+      output_image.extent().height,
+      1);
+    command_buffer.end_submit_and_wait();
+  }
+
+  LOGI("Vulkan trace smoke passed:");
+  LOGI("  dispatch extent: {}x{}", output_image.extent().width, output_image.extent().height);
+  LOGI("  TLAS address: {}", tlas.device_address());
+  LOGI("  descriptor set: {}", descriptors.descriptor_set() != VK_NULL_HANDLE);
+  LOGI("  output image: {}", output_image.image() != VK_NULL_HANDLE);
 
   device.wait_idle();
   return 0;

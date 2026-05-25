@@ -48,6 +48,9 @@ if(VULKAN_RT_ENABLE_VULKAN_CONTEXT_TESTS)
     NAME vulkan.rt_descriptor_smoke
     COMMAND ${PROJECT_NAME} --vulkan-rt-descriptor-smoke --width 64 --height 64)
   add_test(
+    NAME vulkan.trace_smoke
+    COMMAND ${PROJECT_NAME} --vulkan-trace-smoke --width 64 --height 64)
+  add_test(
     NAME vulkan.acceleration_structure_smoke
     COMMAND ${PROJECT_NAME} --vulkan-acceleration-structure-smoke --width 64 --height 64)
   add_test(

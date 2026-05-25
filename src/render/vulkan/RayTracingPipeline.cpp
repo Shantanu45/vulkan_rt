@@ -27,11 +27,12 @@ RayTracingPipeline::RayTracingPipeline(
   const VulkanDevice &device,
   const ShaderModule &raygen_shader,
   const ShaderModule &miss_shader,
-  const ShaderModule &closest_hit_shader)
+  const ShaderModule &closest_hit_shader,
+  VkDescriptorSetLayout descriptor_set_layout)
 {
   try
   {
-    create(device, raygen_shader, miss_shader, closest_hit_shader);
+    create(device, raygen_shader, miss_shader, closest_hit_shader, descriptor_set_layout);
   }
   catch(...)
   {
@@ -47,11 +48,13 @@ RayTracingPipeline::~RayTracingPipeline()
 
 RayTracingPipeline::RayTracingPipeline(RayTracingPipeline &&other) noexcept
   : device_(other.device_)
+  , owned_descriptor_set_layout_(other.owned_descriptor_set_layout_)
   , layout_(other.layout_)
   , pipeline_(other.pipeline_)
   , shader_group_count_(other.shader_group_count_)
 {
   other.device_ = VK_NULL_HANDLE;
+  other.owned_descriptor_set_layout_ = VK_NULL_HANDLE;
   other.layout_ = VK_NULL_HANDLE;
   other.pipeline_ = VK_NULL_HANDLE;
   other.shader_group_count_ = 0;
@@ -64,11 +67,13 @@ RayTracingPipeline &RayTracingPipeline::operator=(RayTracingPipeline &&other) no
     destroy();
 
     device_ = other.device_;
+    owned_descriptor_set_layout_ = other.owned_descriptor_set_layout_;
     layout_ = other.layout_;
     pipeline_ = other.pipeline_;
     shader_group_count_ = other.shader_group_count_;
 
     other.device_ = VK_NULL_HANDLE;
+    other.owned_descriptor_set_layout_ = VK_NULL_HANDLE;
     other.layout_ = VK_NULL_HANDLE;
     other.pipeline_ = VK_NULL_HANDLE;
     other.shader_group_count_ = 0;
@@ -96,12 +101,21 @@ void RayTracingPipeline::create(
   const VulkanDevice &device,
   const ShaderModule &raygen_shader,
   const ShaderModule &miss_shader,
-  const ShaderModule &closest_hit_shader)
+  const ShaderModule &closest_hit_shader,
+  VkDescriptorSetLayout descriptor_set_layout)
 {
   device_ = device.device();
 
+  if(descriptor_set_layout == VK_NULL_HANDLE)
+  {
+    create_default_descriptor_set_layout();
+    descriptor_set_layout = owned_descriptor_set_layout_;
+  }
+
   VkPipelineLayoutCreateInfo layout_info{};
   layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+  layout_info.setLayoutCount = 1;
+  layout_info.pSetLayouts = &descriptor_set_layout;
   throw_if_failed(vkCreatePipelineLayout(device.device(), &layout_info, nullptr, &layout_), "vkCreatePipelineLayout");
 
   constexpr std::uint32_t raygen_stage_index = 0;
@@ -163,6 +177,28 @@ void RayTracingPipeline::create(
   shader_group_count_ = static_cast<std::uint32_t>(groups.size());
 }
 
+void RayTracingPipeline::create_default_descriptor_set_layout()
+{
+  std::array<VkDescriptorSetLayoutBinding, 2> bindings{};
+  bindings[0].binding = 0;
+  bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+  bindings[0].descriptorCount = 1;
+  bindings[0].stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+
+  bindings[1].binding = 1;
+  bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+  bindings[1].descriptorCount = 1;
+  bindings[1].stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+
+  VkDescriptorSetLayoutCreateInfo layout_info{};
+  layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  layout_info.bindingCount = static_cast<std::uint32_t>(bindings.size());
+  layout_info.pBindings = bindings.data();
+  throw_if_failed(
+    vkCreateDescriptorSetLayout(device_, &layout_info, nullptr, &owned_descriptor_set_layout_),
+    "vkCreateDescriptorSetLayout");
+}
+
 void RayTracingPipeline::destroy()
 {
   if(pipeline_ != VK_NULL_HANDLE)
@@ -175,6 +211,12 @@ void RayTracingPipeline::destroy()
   {
     vkDestroyPipelineLayout(device_, layout_, nullptr);
     layout_ = VK_NULL_HANDLE;
+  }
+
+  if(owned_descriptor_set_layout_ != VK_NULL_HANDLE)
+  {
+    vkDestroyDescriptorSetLayout(device_, owned_descriptor_set_layout_, nullptr);
+    owned_descriptor_set_layout_ = VK_NULL_HANDLE;
   }
 
   device_ = VK_NULL_HANDLE;

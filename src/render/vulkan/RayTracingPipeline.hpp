@@ -16,7 +16,8 @@ public:
     const VulkanDevice &device,
     const ShaderModule &raygen_shader,
     const ShaderModule &miss_shader,
-    const ShaderModule &closest_hit_shader);
+    const ShaderModule &closest_hit_shader,
+    VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE);
   ~RayTracingPipeline();
 
   RayTracingPipeline(const RayTracingPipeline &) = delete;
@@ -34,10 +35,13 @@ private:
     const VulkanDevice &device,
     const ShaderModule &raygen_shader,
     const ShaderModule &miss_shader,
-    const ShaderModule &closest_hit_shader);
+    const ShaderModule &closest_hit_shader,
+    VkDescriptorSetLayout descriptor_set_layout);
+  void create_default_descriptor_set_layout();
   void destroy();
 
   VkDevice device_ = VK_NULL_HANDLE;
+  VkDescriptorSetLayout owned_descriptor_set_layout_ = VK_NULL_HANDLE;
   VkPipelineLayout layout_ = VK_NULL_HANDLE;
   VkPipeline pipeline_ = VK_NULL_HANDLE;
   std::uint32_t shader_group_count_ = 0;
