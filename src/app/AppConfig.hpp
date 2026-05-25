@@ -23,6 +23,7 @@ struct AppConfig
   bool vulkan_sbt_smoke = false;
   bool vulkan_acceleration_structure_smoke = false;
   bool vulkan_triangle_blas_smoke = false;
+  bool vulkan_tlas_smoke = false;
   bool vulkan_buffer_smoke = false;
   bool vulkan_clear_smoke = false;
   bool vulkan_resize_smoke = false;

@@ -80,6 +80,10 @@ int main(int argc, char **argv)
     return vulkan_rt::app::vulkan_triangle_blas_smoke_test(config);
   }
 
+  if (config.vulkan_tlas_smoke) {
+    return vulkan_rt::app::vulkan_tlas_smoke_test(config);
+  }
+
   if (config.vulkan_buffer_smoke) {
     return vulkan_rt::app::vulkan_buffer_smoke_test(config);
   }

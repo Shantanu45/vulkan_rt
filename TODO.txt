@@ -27,6 +27,7 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Add ShaderBindingTable Vulkan type.
 - [x] Add AccelerationStructure Vulkan type.
 - [x] Add one-triangle BLAS build smoke path.
+- [x] Add one-instance TLAS build smoke path.
 - [x] Add VulkanAllocator Vulkan type (VMA).
 - [x] Add VulkanBuffer Vulkan type.
 - [ ] Avoid broad Vulkan abstraction layers that hide core API concepts.

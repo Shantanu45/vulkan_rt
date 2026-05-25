@@ -52,6 +52,9 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_flag("--vulkan-triangle-blas-smoke",
     config.vulkan_triangle_blas_smoke,
     "Build a bottom-level acceleration structure for one triangle.");
+  cli.add_flag("--vulkan-tlas-smoke",
+    config.vulkan_tlas_smoke,
+    "Build a top-level acceleration structure with one triangle BLAS instance.");
   cli.add_flag("--vulkan-buffer-smoke",
     config.vulkan_buffer_smoke,
     "Create VulkanAllocator and allocate a staging and device-local buffer via VMA.");
