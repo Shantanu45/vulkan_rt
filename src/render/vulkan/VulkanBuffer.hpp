@@ -33,6 +33,8 @@ public:
 
   [[nodiscard]] void *map();
   void unmap();
+  void flush(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
+  void invalidate(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
 
 private:
   void create(const VulkanAllocator &allocator, const BufferCreateInfo &create_info);
@@ -42,5 +44,6 @@ private:
   VkBuffer buffer_ = VK_NULL_HANDLE;
   VmaAllocation allocation_ = VK_NULL_HANDLE;
   VkDeviceSize size_ = 0;
+  bool mapped_ = false;
 };
 }

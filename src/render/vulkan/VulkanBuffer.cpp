@@ -36,11 +36,13 @@ VulkanBuffer::VulkanBuffer(VulkanBuffer &&other) noexcept
   , buffer_(other.buffer_)
   , allocation_(other.allocation_)
   , size_(other.size_)
+  , mapped_(other.mapped_)
 {
   other.allocator_ = VK_NULL_HANDLE;
   other.buffer_ = VK_NULL_HANDLE;
   other.allocation_ = VK_NULL_HANDLE;
   other.size_ = 0;
+  other.mapped_ = false;
 }
 
 VulkanBuffer &VulkanBuffer::operator=(VulkanBuffer &&other) noexcept
@@ -52,10 +54,12 @@ VulkanBuffer &VulkanBuffer::operator=(VulkanBuffer &&other) noexcept
     buffer_ = other.buffer_;
     allocation_ = other.allocation_;
     size_ = other.size_;
+    mapped_ = other.mapped_;
     other.allocator_ = VK_NULL_HANDLE;
     other.buffer_ = VK_NULL_HANDLE;
     other.allocation_ = VK_NULL_HANDLE;
     other.size_ = 0;
+    other.mapped_ = false;
   }
   return *this;
 }
@@ -77,18 +81,50 @@ VkDeviceSize VulkanBuffer::size() const
 
 void *VulkanBuffer::map()
 {
+  if(mapped_)
+  {
+    throw std::runtime_error("Vulkan buffer is already mapped.");
+  }
+
   void *data = nullptr;
   throw_if_failed(vmaMapMemory(allocator_, allocation_, &data), "vmaMapMemory");
+  mapped_ = true;
   return data;
 }
 
 void VulkanBuffer::unmap()
 {
+  if(!mapped_)
+  {
+    throw std::runtime_error("Cannot unmap a Vulkan buffer that is not mapped.");
+  }
+
   vmaUnmapMemory(allocator_, allocation_);
+  mapped_ = false;
+}
+
+void VulkanBuffer::flush(VkDeviceSize offset, VkDeviceSize size)
+{
+  throw_if_failed(vmaFlushAllocation(allocator_, allocation_, offset, size), "vmaFlushAllocation");
+}
+
+void VulkanBuffer::invalidate(VkDeviceSize offset, VkDeviceSize size)
+{
+  throw_if_failed(vmaInvalidateAllocation(allocator_, allocation_, offset, size), "vmaInvalidateAllocation");
 }
 
 void VulkanBuffer::create(const VulkanAllocator &allocator, const BufferCreateInfo &create_info)
 {
+  if(create_info.size == 0)
+  {
+    throw std::runtime_error("Cannot create zero-sized Vulkan buffer.");
+  }
+
+  if(create_info.usage == 0)
+  {
+    throw std::runtime_error("Cannot create Vulkan buffer without usage flags.");
+  }
+
   VkBufferCreateInfo buffer_info{};
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info.size = create_info.size;
@@ -105,17 +141,25 @@ void VulkanBuffer::create(const VulkanAllocator &allocator, const BufferCreateIn
 
   allocator_ = allocator.allocator();
   size_ = create_info.size;
+  mapped_ = false;
 }
 
 void VulkanBuffer::destroy()
 {
   if(buffer_ != VK_NULL_HANDLE)
   {
+    if(mapped_)
+    {
+      vmaUnmapMemory(allocator_, allocation_);
+      mapped_ = false;
+    }
+
     vmaDestroyBuffer(allocator_, buffer_, allocation_);
     buffer_ = VK_NULL_HANDLE;
     allocation_ = VK_NULL_HANDLE;
   }
   allocator_ = VK_NULL_HANDLE;
   size_ = 0;
+  mapped_ = false;
 }
 }
