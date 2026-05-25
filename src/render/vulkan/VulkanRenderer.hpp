@@ -11,6 +11,7 @@
 #pragma once
 #include "../Renderer.hpp"
 #include "RayTracingDescriptorSet.hpp"
+#include "RayTracingCamera.hpp"
 #include "RayTracingPipeline.hpp"
 #include "RayTracingScene.hpp"
 #include "ShaderBindingTable.hpp"
@@ -43,10 +44,10 @@ public:
 
 private:
   // TODO: add doc
-  void create_ray_tracing_resources(const scene::Scene &scene);
+  void create_ray_tracing_resources(const scene::Scene &scene, const scene::Camera &camera);
   void destroy_ray_tracing_resources();
-  void recreate_swapchain_if_needed(const scene::Scene &scene);
-  void recreate_swapchain(SwapchainExtent extent, const scene::Scene &scene);
+  void recreate_swapchain_if_needed(const scene::Scene &scene, const scene::Camera &camera);
+  void recreate_swapchain(SwapchainExtent extent, const scene::Scene &scene, const scene::Camera &camera);
   void trace_to_output_image(VkCommandBuffer command_buffer);
   void copy_output_image_to_swapchain(VkCommandBuffer command_buffer, std::uint32_t image_index);
 
@@ -56,6 +57,7 @@ private:
   VulkanSwapchain swapchain_;
   VulkanFrameResources frames_;
   std::unique_ptr<RayTracingScene> ray_tracing_scene_;
+  std::unique_ptr<RayTracingCamera> ray_tracing_camera_;
   std::unique_ptr<VulkanImage> output_image_;
   std::unique_ptr<RayTracingDescriptorSet> descriptors_;
   std::unique_ptr<ShaderModule> raygen_shader_;

@@ -68,6 +68,8 @@ set(vulkan
     render/vulkan/VulkanRendererConfig.hpp
     render/vulkan/VulkanRenderer.hpp
     render/vulkan/VulkanRenderer.cpp
+    render/vulkan/RayTracingCamera.hpp
+    render/vulkan/RayTracingCamera.cpp
     render/vulkan/RayTracingScene.hpp
     render/vulkan/RayTracingScene.cpp
     render/vulkan/RayTracingPipeline.hpp

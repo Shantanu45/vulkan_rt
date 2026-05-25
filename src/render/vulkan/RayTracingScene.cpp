@@ -102,7 +102,7 @@ void RayTracingScene::build_scene(const VulkanDevice &device, const VulkanAlloca
       .usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |       // VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR means: The buffer may be read by vkCmdBuildAccelerationStructuresKHR while building the BLAS. In our case, those reads are the triangle positions.
                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,// VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT means: The buffer can be addressed through a raw GPU device address, which is exactly how the BLAS geometry points at it
       .memory_usage = VMA_MEMORY_USAGE_AUTO,
-      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,        // tells VMA "This allocation should be CPU-mappable, and I mostly plan to write it once/sequentially from the CPU.”
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,        // tells VMA "This allocation should be CPU-mappable, and I mostly plan to write it once/sequentially from the CPU."
     });
 
   auto *vertex_data = static_cast<float *>(vertex_buffer_->map());
