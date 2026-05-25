@@ -158,6 +158,35 @@ void transition_image_to_general(VkCommandBuffer command_buffer, VkImage image)
     1,
     &barrier);
 }
+
+void transition_image_general_to_transfer_src(VkCommandBuffer command_buffer, VkImage image)
+{
+  VkImageMemoryBarrier barrier{};
+  barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+  barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+  barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+  barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
+  barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.image = image;
+  barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  barrier.subresourceRange.baseMipLevel = 0;
+  barrier.subresourceRange.levelCount = 1;
+  barrier.subresourceRange.baseArrayLayer = 0;
+  barrier.subresourceRange.layerCount = 1;
+
+  vkCmdPipelineBarrier(command_buffer,
+    VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+    VK_PIPELINE_STAGE_TRANSFER_BIT,
+    0,
+    0,
+    nullptr,
+    0,
+    nullptr,
+    1,
+    &barrier);
+}
 }
 
 int vulkan_context_smoke_test(const AppConfig &config)
@@ -748,6 +777,14 @@ int vulkan_trace_smoke_test(const AppConfig &config)
   const render::vulkan::ShaderModule closest_hit{device, shader_dir / "closesthit.rchit.spv"};
   const render::vulkan::RayTracingPipeline pipeline{device, raygen, miss, closest_hit, descriptors.layout()};
   const render::vulkan::ShaderBindingTable sbt{device, allocator, pipeline};
+  render::vulkan::VulkanBuffer readback_buffer{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = static_cast<VkDeviceSize>(output_image.extent().width * output_image.extent().height * 4),
+      .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT,
+    }};
 
   {
     OneShotCommandBuffer command_buffer{device};
@@ -771,14 +808,58 @@ int vulkan_trace_smoke_test(const AppConfig &config)
       output_image.extent().width,
       output_image.extent().height,
       1);
+
+    transition_image_general_to_transfer_src(command_buffer.command_buffer(), output_image.image());
+
+    VkBufferImageCopy copy_region{};
+    copy_region.bufferOffset = 0;
+    copy_region.bufferRowLength = 0;
+    copy_region.bufferImageHeight = 0;
+    copy_region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copy_region.imageSubresource.mipLevel = 0;
+    copy_region.imageSubresource.baseArrayLayer = 0;
+    copy_region.imageSubresource.layerCount = 1;
+    copy_region.imageOffset = VkOffset3D{.x = 0, .y = 0, .z = 0};
+    copy_region.imageExtent =
+      VkExtent3D{.width = output_image.extent().width, .height = output_image.extent().height, .depth = 1};
+
+    vkCmdCopyImageToBuffer(command_buffer.command_buffer(),
+      output_image.image(),
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+      readback_buffer.buffer(),
+      1,
+      &copy_region);
     command_buffer.end_submit_and_wait();
   }
+
+  readback_buffer.invalidate();
+  const auto *pixels = static_cast<const std::uint8_t *>(readback_buffer.map());
+  const auto pixel_offset = [extent = output_image.extent()](std::uint32_t x, std::uint32_t y) {
+    return static_cast<std::size_t>((y * extent.width + x) * 4);
+  };
+  const auto corner_offset = pixel_offset(0, 0);
+  const auto center_offset = pixel_offset(output_image.extent().width / 2, output_image.extent().height / 2);
+  const std::array<std::uint8_t, 4> corner_pixel{
+    pixels[corner_offset + 0],
+    pixels[corner_offset + 1],
+    pixels[corner_offset + 2],
+    pixels[corner_offset + 3],
+  };
+  const std::array<std::uint8_t, 4> center_pixel{
+    pixels[center_offset + 0],
+    pixels[center_offset + 1],
+    pixels[center_offset + 2],
+    pixels[center_offset + 3],
+  };
+  readback_buffer.unmap();
 
   LOGI("Vulkan trace smoke passed:");
   LOGI("  dispatch extent: {}x{}", output_image.extent().width, output_image.extent().height);
   LOGI("  TLAS address: {}", tlas.device_address());
   LOGI("  descriptor set: {}", descriptors.descriptor_set() != VK_NULL_HANDLE);
   LOGI("  output image: {}", output_image.image() != VK_NULL_HANDLE);
+  LOGI("  corner pixel RGBA: {}, {}, {}, {}", corner_pixel[0], corner_pixel[1], corner_pixel[2], corner_pixel[3]);
+  LOGI("  center pixel RGBA: {}, {}, {}, {}", center_pixel[0], center_pixel[1], center_pixel[2], center_pixel[3]);
 
   device.wait_idle();
   return 0;

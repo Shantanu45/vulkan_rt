@@ -32,6 +32,7 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Add one-instance TLAS build smoke path.
 - [x] Add ray tracing descriptor smoke path.
 - [x] Add offscreen vkCmdTraceRaysKHR smoke path.
+- [x] Add trace smoke image readback and pixel logging.
 - [x] Add VulkanAllocator Vulkan type (VMA).
 - [x] Add VulkanBuffer Vulkan type.
 - [ ] Avoid broad Vulkan abstraction layers that hide core API concepts.
