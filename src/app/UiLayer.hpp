@@ -2,6 +2,7 @@
 
 #include "app/Window.hpp"
 #include "engine/FrameStats.hpp"
+#include "render/Renderer.hpp"
 
 #include <SDL3/SDL.h>
 
@@ -14,6 +15,12 @@ struct UiStats
   double fps = 0.0;
   uint64_t frame_index = 0;
   Extent framebuffer_extent = {};
+};
+
+struct UiActions
+{
+  bool renderer_settings_changed = false;
+  bool reset_accumulation_requested = false;
 };
 
 [[nodiscard]] UiStats make_ui_stats(const engine::FrameStats &frame_stats, Extent framebuffer_extent);
@@ -32,10 +39,12 @@ public:
   void initialize(SDL_Window *window);
   void handle_event(const SDL_Event &event);
   void begin_frame();
-  void draw(const UiStats &stats);
+  UiActions draw(const UiStats &stats, render::RendererSettings &settings);
   void end_frame();
 
   [[nodiscard]] const UiStats &last_stats() const;
+  [[nodiscard]] bool wants_keyboard() const;
+  [[nodiscard]] bool wants_mouse() const;
 
 private:
   UiStats last_stats_ = {};

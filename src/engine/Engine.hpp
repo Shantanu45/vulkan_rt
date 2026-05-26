@@ -34,11 +34,14 @@ public:
   void render();
   void resize(int width, int height);
   void set_renderer(std::unique_ptr<render::Renderer> renderer);
+  void set_renderer_settings(const render::RendererSettings &settings);
+  void request_accumulation_reset();
 
   [[nodiscard]] const FrameStats &frame_stats() const;
   [[nodiscard]] const EngineConfig &config() const;
   [[nodiscard]] const scene::Scene &scene() const;
   [[nodiscard]] const scene::Camera &camera() const;
+  [[nodiscard]] const render::RendererSettings &renderer_settings() const;
 
 private:
   EngineConfig config_;
@@ -46,6 +49,7 @@ private:
   scene::Scene scene_;
   scene::Camera camera_;
   std::unique_ptr<render::Renderer> renderer_;
+  render::RendererSettings renderer_settings_;
   bool reset_accumulation_requested_ = true;
 };
 }// namespace vulkan_rt::engine

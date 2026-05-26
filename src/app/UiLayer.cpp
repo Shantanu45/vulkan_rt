@@ -60,12 +60,13 @@ void UiLayer::begin_frame()
   ImGui::NewFrame();
 }
 
-void UiLayer::draw(const UiStats &stats)
+UiActions UiLayer::draw(const UiStats &stats, render::RendererSettings &settings)
 {
   last_stats_ = stats;
+  UiActions actions;
   if(!initialized_)
   {
-    return;
+    return actions;
   }
 
   ImGui::SetNextWindowPos(ImVec2{12.0F, 12.0F}, ImGuiCond_FirstUseEver);
@@ -76,8 +77,37 @@ void UiLayer::draw(const UiStats &stats)
     ImGui::Text("Frame %.0f ms", stats.frame_time_ms);
     ImGui::Text("Frame index %llu", static_cast<unsigned long long>(stats.frame_index));
     ImGui::Text("Extent %dx%d", stats.framebuffer_extent.width, stats.framebuffer_extent.height);
+    ImGui::Separator();
+
+    int max_bounces = static_cast<int>(settings.max_bounces);
+    if(ImGui::SliderInt("Max bounces", &max_bounces, 1, 8))
+    {
+      settings.max_bounces = static_cast<std::uint32_t>(max_bounces);
+      actions.renderer_settings_changed = true;
+    }
+
+    if(ImGui::Checkbox("Direct lighting", &settings.direct_lighting_enabled))
+    {
+      actions.renderer_settings_changed = true;
+    }
+
+    if(ImGui::Checkbox("Jitter", &settings.jitter_enabled))
+    {
+      actions.renderer_settings_changed = true;
+    }
+
+    if(ImGui::SliderFloat("Exposure", &settings.exposure, 0.05F, 5.0F, "%.2f"))
+    {
+      actions.renderer_settings_changed = true;
+    }
+
+    if(ImGui::Button("Reset accumulation"))
+    {
+      actions.reset_accumulation_requested = true;
+    }
   }
   ImGui::End();
+  return actions;
 }
 
 void UiLayer::end_frame()
@@ -89,4 +119,14 @@ void UiLayer::end_frame()
 }
 
 const UiStats &UiLayer::last_stats() const { return last_stats_; }
+
+bool UiLayer::wants_keyboard() const
+{
+  return initialized_ && ImGui::GetIO().WantCaptureKeyboard;
+}
+
+bool UiLayer::wants_mouse() const
+{
+  return initialized_ && ImGui::GetIO().WantCaptureMouse;
+}
 }// namespace vulkan_rt::app

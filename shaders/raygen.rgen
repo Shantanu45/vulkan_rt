@@ -39,6 +39,14 @@ layout(set = 0, binding = 6) uniform FrameData
   uint frame_index;         // changes the RNG each frame.
   uint reset_accumulation;  // clears history when the camera or scene changes.
   uint light_count;
+  uint max_bounces;
+  uint direct_lighting_enabled;
+  uint jitter_enabled;
+  uint _pad0;
+  float exposure;
+  float _pad1;
+  float _pad2;
+  float _pad3;
 } frame_data;
 
 struct LightTriangle
@@ -79,8 +87,6 @@ struct RayPayload
 
 layout(location = 0) rayPayloadEXT RayPayload payload;
 
-const float display_exposure = 1.0;
-
 vec3 linear_to_srgb(vec3 color)
 {
   return pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
@@ -93,7 +99,7 @@ vec3 tonemap_reinhard(vec3 color)
 
 vec3 make_display_color(vec3 hdr_color)
 {
-  return linear_to_srgb(tonemap_reinhard(hdr_color * display_exposure));
+  return linear_to_srgb(tonemap_reinhard(hdr_color * frame_data.exposure));
 }
 
 // This hashes an integer into a pseudo-random-looking integer.
@@ -211,7 +217,9 @@ void main()
     hash_u32(frame_data.sample_index * 374761393u) ^
     hash_u32(frame_data.frame_index * 668265263u);
   // Instead of shooting through the exact pixel center, it shoots through a random point inside the pixel.
-  const vec2 pixel_jitter = vec2(random_float(rng_state), random_float(rng_state));
+  const vec2 pixel_jitter = frame_data.jitter_enabled != 0u
+    ? vec2(random_float(rng_state), random_float(rng_state))
+    : vec2(0.5);
   const vec2 pixel_sample = vec2(gl_LaunchIDEXT.xy) + pixel_jitter;
   const vec2 uv = pixel_sample / vec2(gl_LaunchSizeEXT.xy);
   const vec2 screen = uv * 2.0 - 1.0;
@@ -229,8 +237,7 @@ void main()
   vec3 throughput = vec3(1.0);
   vec3 radiance = vec3(0.0);
 
-  // Only two bounces are traced:
-  for(uint bounce = 0u; bounce < 2u; ++bounce)
+  for(uint bounce = 0u; bounce < max(frame_data.max_bounces, 1u); ++bounce)
   {
     payload.radiance = vec3(0.0);
     payload.hit = 0u;
@@ -264,7 +271,10 @@ void main()
     {
       break;
     }
-    radiance += throughput * estimate_direct_light(payload.hit_position, payload.normal, payload.albedo, rng_state);
+    if(frame_data.direct_lighting_enabled != 0u)
+    {
+      radiance += throughput * estimate_direct_light(payload.hit_position, payload.normal, payload.albedo, rng_state);
+    }
     throughput *= payload.albedo;
     path_origin = payload.hit_position + payload.normal * 0.001;
     path_direction = random_hemisphere_direction(payload.normal, rng_state);

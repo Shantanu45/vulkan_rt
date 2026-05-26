@@ -17,19 +17,20 @@
 namespace vulkan_rt::app {
 namespace
 {
-engine::CameraControlInput make_camera_control_input(const vulkan_rt::input::InputSystem &input)
+engine::CameraControlInput make_camera_control_input(
+  const vulkan_rt::input::InputSystem &input, bool allow_keyboard, bool allow_mouse)
 {
   return engine::CameraControlInput{
-    .move_forward = input.is_held(vulkan_rt::input::Key::W),
-    .move_backward = input.is_held(vulkan_rt::input::Key::S),
-    .move_left = input.is_held(vulkan_rt::input::Key::A),
-    .move_right = input.is_held(vulkan_rt::input::Key::D),
-    .move_up = input.is_held(vulkan_rt::input::Key::E),
-    .move_down = input.is_held(vulkan_rt::input::Key::Q),
-    .fast_move = input.is_held(vulkan_rt::input::Key::LeftShift),
-    .rotate = input.is_mouse_held(vulkan_rt::input::MouseButton::Right),
-    .mouse_delta_x = input.get_mouse_delta().x,
-    .mouse_delta_y = input.get_mouse_delta().y,
+    .move_forward = allow_keyboard && input.is_held(vulkan_rt::input::Key::W),
+    .move_backward = allow_keyboard && input.is_held(vulkan_rt::input::Key::S),
+    .move_left = allow_keyboard && input.is_held(vulkan_rt::input::Key::A),
+    .move_right = allow_keyboard && input.is_held(vulkan_rt::input::Key::D),
+    .move_up = allow_keyboard && input.is_held(vulkan_rt::input::Key::E),
+    .move_down = allow_keyboard && input.is_held(vulkan_rt::input::Key::Q),
+    .fast_move = allow_keyboard && input.is_held(vulkan_rt::input::Key::LeftShift),
+    .rotate = allow_mouse && input.is_mouse_held(vulkan_rt::input::MouseButton::Right),
+    .mouse_delta_x = allow_mouse ? input.get_mouse_delta().x : 0.0F,
+    .mouse_delta_y = allow_mouse ? input.get_mouse_delta().y : 0.0F,
   };
 }
 }
@@ -114,11 +115,20 @@ void Application::tick_once(double delta_seconds)
     window_.clear_resize_flag();
   }
 
+  auto renderer_settings = engine_.renderer_settings();
   ui_.begin_frame();
-  ui_.draw(make_ui_stats(engine_.frame_stats(), extent));
+  const auto ui_actions = ui_.draw(make_ui_stats(engine_.frame_stats(), extent), renderer_settings);
   ui_.end_frame();
+  if(ui_actions.renderer_settings_changed)
+  {
+    engine_.set_renderer_settings(renderer_settings);
+  }
+  if(ui_actions.reset_accumulation_requested)
+  {
+    engine_.request_accumulation_reset();
+  }
 
-  engine_.update_camera(make_camera_control_input(input_), delta_seconds);
+  engine_.update_camera(make_camera_control_input(input_, !ui_.wants_keyboard(), !ui_.wants_mouse()), delta_seconds);
   engine_.update(delta_seconds);
   engine_.render();
 }

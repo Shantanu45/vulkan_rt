@@ -13,9 +13,17 @@ struct GpuRayTracingFrameData
   std::uint32_t frame_index = 0;
   std::uint32_t reset_accumulation = 0;
   std::uint32_t light_count = 0;
+  std::uint32_t max_bounces = 2;
+  std::uint32_t direct_lighting_enabled = 1;
+  std::uint32_t jitter_enabled = 1;
+  std::uint32_t _pad0 = 0;
+  float exposure = 1.0F;
+  float _pad1 = 0.0F;
+  float _pad2 = 0.0F;
+  float _pad3 = 0.0F;
 };
 
-static_assert(sizeof(GpuRayTracingFrameData) == 16);
+static_assert(sizeof(GpuRayTracingFrameData) == 48);
 
 class RayTracingFrameData
 {

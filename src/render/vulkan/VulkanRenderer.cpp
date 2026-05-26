@@ -111,6 +111,11 @@ void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scen
     .frame_index = static_cast<std::uint32_t>(frame_info.frame_index),
     .reset_accumulation = frame_info.reset_accumulation ? 1U : 0U,
     .light_count = ray_tracing_->scene->light_count(),
+    .max_bounces = frame_info.settings.max_bounces,
+    .direct_lighting_enabled = frame_info.settings.direct_lighting_enabled ? 1U : 0U,
+    .jitter_enabled = frame_info.settings.jitter_enabled ? 1U : 0U,
+    ._pad0 = 0U,
+    .exposure = frame_info.settings.exposure,
   });
 
   const auto frame_index = frames_.current_frame_index();

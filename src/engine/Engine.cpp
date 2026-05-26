@@ -73,6 +73,7 @@ void Engine::render()
       .frame_time_ms = frame_stats_.frame_time_ms,
       .fps = frame_stats_.fps,
       .reset_accumulation = reset_accumulation_requested_,
+      .settings = renderer_settings_,
     },
     scene_,
     camera_);
@@ -90,6 +91,23 @@ void Engine::set_renderer(std::unique_ptr<render::Renderer> renderer)
   renderer_ = std::move(renderer);
 }
 
+void Engine::set_renderer_settings(const render::RendererSettings &settings)
+{
+  if(settings.max_bounces != renderer_settings_.max_bounces ||
+     settings.direct_lighting_enabled != renderer_settings_.direct_lighting_enabled ||
+     settings.jitter_enabled != renderer_settings_.jitter_enabled)
+  {
+    reset_accumulation_requested_ = true;
+  }
+
+  renderer_settings_ = settings;
+}
+
+void Engine::request_accumulation_reset()
+{
+  reset_accumulation_requested_ = true;
+}
+
 void Engine::resize(int width, int height)
 {
   camera_.set_viewport_size(width, height);
@@ -104,4 +122,6 @@ const EngineConfig &Engine::config() const { return config_; }
 const scene::Scene &Engine::scene() const { return scene_; }
 
 const scene::Camera &Engine::camera() const { return camera_; }
+
+const render::RendererSettings &Engine::renderer_settings() const { return renderer_settings_; }
 }// namespace vulkan_rt::engine
