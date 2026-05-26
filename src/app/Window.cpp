@@ -1,5 +1,7 @@
 #include "app/Window.hpp"
 
+#include "app/UiLayer.hpp"
+
 #include <stdexcept>
 #include <string>
 
@@ -15,12 +17,13 @@ Window::~Window()
   if (handle_ != nullptr) { SDL_DestroyWindow(handle_); }
 }
 
-void Window::poll_events(vulkan_rt::input::InputSystem &input)
+void Window::poll_events(vulkan_rt::input::InputSystem &input, UiLayer &ui)
 {
   input.update();
 
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
+    ui.handle_event(event);
     input.on_sdl_event(event);
 
     switch (event.type) {

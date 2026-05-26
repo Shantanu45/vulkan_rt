@@ -46,9 +46,10 @@ Application::Application(AppConfig config)
     window_(fmt::format("{} {}", vulkan_rt::cmake::project_name, vulkan_rt::cmake::project_version),
       config_.width,
       config_.height),
-    engine_(engine::make_engine_config(config_)), previous_frame_time_(Clock::now())
+    ui_(), engine_(engine::make_engine_config(config_)), previous_frame_time_(Clock::now())
 {
   LOGI("Created SDL3 application window: {}x{}", config_.width, config_.height);
+  ui_.initialize(window_.native_handle());
   const auto extent = window_.framebuffer_extent();
   SdlSurfaceProvider surface_provider{window_.native_handle()};
   const std::string application_name{vulkan_rt::cmake::project_name};
@@ -99,7 +100,7 @@ int Application::smoke_test()
 
 void Application::tick_once(double delta_seconds)
 {
-  window_.poll_events(input_);
+  window_.poll_events(input_, ui_);
 
   const auto extent = window_.framebuffer_extent();
   if(extent.width <= 0 || extent.height <= 0)
@@ -113,12 +114,12 @@ void Application::tick_once(double delta_seconds)
     window_.clear_resize_flag();
   }
 
-  engine_.update_camera(make_camera_control_input(input_), delta_seconds);
-  engine_.update(delta_seconds);
-  engine_.render();
-
   ui_.begin_frame();
   ui_.draw(make_ui_stats(engine_.frame_stats(), extent));
   ui_.end_frame();
+
+  engine_.update_camera(make_camera_control_input(input_), delta_seconds);
+  engine_.update(delta_seconds);
+  engine_.render();
 }
 }// namespace vulkan_rt::app

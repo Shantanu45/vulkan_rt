@@ -7,6 +7,8 @@
 #include <string_view>
 
 namespace vulkan_rt::app {
+class UiLayer;
+
 struct Extent
 {
   int width = 0;
@@ -24,7 +26,7 @@ public:
   Window(Window &&) = delete;
   Window &operator=(Window &&) = delete;
 
-  void poll_events(vulkan_rt::input::InputSystem &input);
+  void poll_events(vulkan_rt::input::InputSystem &input, UiLayer &ui);
 
   [[nodiscard]] bool should_close() const;
   [[nodiscard]] bool was_resized() const;

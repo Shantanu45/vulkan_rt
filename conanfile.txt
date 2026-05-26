@@ -11,6 +11,7 @@ libassert/2.2.1
 volk/1.4.350.0
 vulkan-headers/1.4.350.0
 vulkan-memory-allocator/3.3.0
+imgui/1.92.8
 
 [generators]
 CMakeDeps

@@ -71,6 +71,8 @@ set(vulkan
     render/vulkan/VulkanCheck.hpp
     render/vulkan/VulkanCheck.cpp
     render/vulkan/VulkanRendererConfig.hpp
+    render/vulkan/VulkanImGui.hpp
+    render/vulkan/VulkanImGui.cpp
     render/vulkan/VulkanRenderer.hpp
     render/vulkan/VulkanRenderer.cpp
     render/vulkan/RayTracingCamera.hpp
@@ -106,6 +108,15 @@ set(vulkan
 )
 
 source_group("render/vulkan" FILES ${vulkan})
+
+set(imgui_backends
+    "${CMAKE_SOURCE_DIR}/third_party/imgui/backends/imgui_impl_sdl3.cpp"
+    "${CMAKE_SOURCE_DIR}/third_party/imgui/backends/imgui_impl_sdl3.h"
+    "${CMAKE_SOURCE_DIR}/third_party/imgui/backends/imgui_impl_vulkan.cpp"
+    "${CMAKE_SOURCE_DIR}/third_party/imgui/backends/imgui_impl_vulkan.h"
+)
+
+source_group("third_party/imgui/backends" FILES ${imgui_backends})
 
 set(scene
     scene/Camera.cpp
@@ -165,6 +176,7 @@ ${input}
 ${engine}
 ${render}
 ${vulkan}
+${imgui_backends}
 ${scene}
 ${util}
 ${vulkan_rt_shader_sources}
@@ -196,12 +208,14 @@ target_link_libraries(
           spdlog::spdlog
           Vulkan::Headers
           volk::volk
+          imgui::imgui
           libassert::assert
           SDL3::SDL3
           GPUOpen::VulkanMemoryAllocator
           ${vulkan_rt_sdl_target})
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
+  IMGUI_IMPL_VULKAN_USE_VOLK
   VMA_STATIC_VULKAN_FUNCTIONS=0
   VMA_DYNAMIC_VULKAN_FUNCTIONS=1
 )
@@ -212,7 +226,8 @@ vulkan_rt_configure_linker(${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PRIVATE
   "${CMAKE_BINARY_DIR}/configured_files/include"
   "${CMAKE_SOURCE_DIR}/include"
-  "${CMAKE_SOURCE_DIR}/src")
+  "${CMAKE_SOURCE_DIR}/src"
+  "${CMAKE_SOURCE_DIR}/third_party/imgui")
 
 # Apply WASM-specific configuration
 if(EMSCRIPTEN)

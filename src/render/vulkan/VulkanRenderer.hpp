@@ -20,6 +20,7 @@
 #include "VulkanAllocator.hpp"
 #include "VulkanContext.hpp"
 #include "VulkanDevice.hpp"
+#include "VulkanImGui.hpp"
 #include "VulkanSwapchain.hpp"
 #include "VulkanFrameResources.hpp"
 #include "VulkanImage.hpp"
@@ -72,6 +73,7 @@ private:
   VulkanAllocator allocator_;
   VulkanSwapchain swapchain_;
   VulkanFrameResources frames_;
+  VulkanImGui imgui_;
   std::unique_ptr<RayTracingResources> ray_tracing_;
   std::vector<VkImageLayout> swapchain_image_layouts_;
   VkImageLayout output_image_layout_ = VK_IMAGE_LAYOUT_UNDEFINED;

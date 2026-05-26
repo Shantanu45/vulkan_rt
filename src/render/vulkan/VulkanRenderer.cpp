@@ -58,6 +58,18 @@ VkExtent3D extent_3d(VkExtent2D extent)
   return VkExtent3D{.width = extent.width, .height = extent.height, .depth = 1};
 }
 
+void transition_swapchain_color_attachment_to_present(VkCommandBuffer command_buffer, VkImage image)
+{
+  transition_image_layout(command_buffer,
+    image,
+    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+    0,
+    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+}
+
 ImageCreateInfo make_storage_image_create_info(VkExtent2D extent, VkFormat format, VkImageUsageFlags extra_usage = 0)
 {
   return ImageCreateInfo{
@@ -77,6 +89,7 @@ VulkanRenderer::VulkanRenderer(
   , allocator_(context_, device_)
   , swapchain_(context_, device_, requested_extent)
   , frames_(device_, 2)
+  , imgui_(context_, device_, swapchain_, frames_.frames_in_flight())
 {
   swapchain_image_layouts_.assign(swapchain_.images().size(), VK_IMAGE_LAYOUT_UNDEFINED);
 }
@@ -141,6 +154,10 @@ void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scen
 
   trace_to_output_image(command_buffer);
   copy_output_image_to_swapchain(command_buffer, image_index);
+  if(!imgui_.render(command_buffer, image_index, swapchain_))
+  {
+    transition_swapchain_color_attachment_to_present(command_buffer, swapchain_.images()[image_index]);
+  }
 
   throw_if_failed(vkEndCommandBuffer(command_buffer), "vkEndCommandBuffer");
 
@@ -267,6 +284,7 @@ void VulkanRenderer::recreate_swapchain(SwapchainExtent extent, const scene::Sce
   // Later: pass the old swapchain handle into recreation instead of blunt replacement.
   swapchain_.recreate(context_, device_, extent);
   swapchain_image_layouts_.assign(swapchain_.images().size(), VK_IMAGE_LAYOUT_UNDEFINED);
+  imgui_.recreate_framebuffers(swapchain_);
   create_ray_tracing_resources(scene, camera);
 }
 
@@ -371,11 +389,11 @@ void VulkanRenderer::copy_output_image_to_swapchain(VkCommandBuffer command_buff
   transition_image_layout(command_buffer,
     swapchain_.images()[image_index],
     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
     VK_ACCESS_TRANSFER_WRITE_BIT,
-    0,
+    VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
     VK_PIPELINE_STAGE_TRANSFER_BIT,
-    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
 }// namespace vulkan_rt::render::vulkan

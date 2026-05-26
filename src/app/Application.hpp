@@ -44,8 +44,8 @@ private:
   SdlRuntime sdl_runtime_;
   Window window_;
   vulkan_rt::input::InputSystem input_;
-  engine::Engine engine_;
   UiLayer ui_;
+  engine::Engine engine_;
   Clock::time_point previous_frame_time_;
 };
 }// namespace vulkan_rt::app
