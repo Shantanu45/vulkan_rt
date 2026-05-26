@@ -24,14 +24,18 @@ public:
   [[nodiscard]] const VulkanBuffer &vertex_buffer() const;
   [[nodiscard]] const VulkanBuffer &material_index_buffer() const;
   [[nodiscard]] const VulkanBuffer &material_buffer() const;
+  [[nodiscard]] const VulkanBuffer &light_buffer() const;
+  [[nodiscard]] std::uint32_t light_count() const;
 
 private:
   void build_scene(const VulkanDevice &device, const VulkanAllocator &allocator, const scene::Scene &scene);
 
   std::uint32_t triangle_count_ = 0;
+  std::uint32_t light_count_ = 0;
   std::unique_ptr<VulkanBuffer> vertex_buffer_;
   std::unique_ptr<VulkanBuffer> material_index_buffer_;
   std::unique_ptr<VulkanBuffer> material_buffer_;
+  std::unique_ptr<VulkanBuffer> light_buffer_;
   std::unique_ptr<AccelerationStructure> blas_;
   std::unique_ptr<VulkanBuffer> instance_buffer_;
   std::unique_ptr<AccelerationStructure> tlas_;

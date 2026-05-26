@@ -55,10 +55,10 @@ Scene make_procedural_scene()
   add_quad(
     triangles, { 1.0F, -1.0F, -1.0F }, { 1.0F, 1.0F, -1.0F }, { 1.0F, 1.0F, 1.0F }, { 1.0F, -1.0F, 1.0F }, green);
   add_quad(triangles,
-    { -0.25F, 0.99F, -0.25F },
-    { -0.25F, 0.99F, 0.25F },
-    { 0.25F, 0.99F, 0.25F },
-    { 0.25F, 0.99F, -0.25F },
+    { -0.25F, 0.90F, -0.25F },
+    { -0.25F, 0.90F, 0.25F },
+    { 0.25F, 0.90F, 0.25F },
+    { 0.25F, 0.90F, -0.25F },
     light);
 
   return Scene{ std::move(materials), std::move(triangles) };

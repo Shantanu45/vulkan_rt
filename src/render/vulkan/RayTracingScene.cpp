@@ -3,6 +3,7 @@
 #include "OneShotCommandBuffer.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
@@ -17,6 +18,52 @@ struct GpuMaterial
   float albedo[4]{};
   float emission[4]{};
 };
+
+struct GpuLightTriangle
+{
+  float v0[4]{};
+  float v1[4]{};
+  float v2[4]{};
+  float emission[4]{};
+  float normal_area[4]{};
+};
+
+scene::Vec3 subtract(scene::Vec3 lhs, scene::Vec3 rhs)
+{
+  return scene::Vec3{lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z};
+}
+
+scene::Vec3 cross(scene::Vec3 lhs, scene::Vec3 rhs)
+{
+  return scene::Vec3{
+    lhs.y * rhs.z - lhs.z * rhs.y,
+    lhs.z * rhs.x - lhs.x * rhs.z,
+    lhs.x * rhs.y - lhs.y * rhs.x,
+  };
+}
+
+scene::Vec3 scale(scene::Vec3 value, float scalar)
+{
+  return scene::Vec3{value.x * scalar, value.y * scalar, value.z * scalar};
+}
+
+float length(scene::Vec3 value)
+{
+  return std::sqrt(value.x * value.x + value.y * value.y + value.z * value.z);
+}
+
+void write_vec3(float (&target)[4], scene::Vec3 value, float w)
+{
+  target[0] = value.x;
+  target[1] = value.y;
+  target[2] = value.z;
+  target[3] = w;
+}
+
+bool is_emissive(scene::Material material)
+{
+  return material.emission.x > 0.0F || material.emission.y > 0.0F || material.emission.z > 0.0F;
+}
 }
 
 RayTracingScene::RayTracingScene(const VulkanDevice &device, const VulkanAllocator &allocator, const scene::Scene &scene)
@@ -66,6 +113,21 @@ const VulkanBuffer &RayTracingScene::material_buffer() const
   return *material_buffer_;
 }
 
+const VulkanBuffer &RayTracingScene::light_buffer() const
+{
+  if(!light_buffer_)
+  {
+    throw std::runtime_error("Ray tracing scene has no light buffer.");
+  }
+
+  return *light_buffer_;
+}
+
+std::uint32_t RayTracingScene::light_count() const
+{
+  return light_count_;
+}
+
 void RayTracingScene::build_scene(const VulkanDevice &device, const VulkanAllocator &allocator, const scene::Scene &scene)
 {
   if(scene.empty())
@@ -79,6 +141,7 @@ void RayTracingScene::build_scene(const VulkanDevice &device, const VulkanAlloca
 
   std::vector<float> vertices;
   std::vector<std::uint32_t> material_indices;
+  std::vector<GpuLightTriangle> lights;
   vertices.reserve(scene_triangles.size() * 9);     // 3 floats per vertex * num of vertexes
   material_indices.reserve(scene_triangles.size());
   const auto append_vertex = [&vertices](scene::Vec3 vertex) {
@@ -92,7 +155,34 @@ void RayTracingScene::build_scene(const VulkanDevice &device, const VulkanAlloca
     append_vertex(triangle.v1);
     append_vertex(triangle.v2);
     material_indices.push_back(triangle.material_index);        // material index per triangle
+
+    const auto material = scene_materials[triangle.material_index];
+    if(is_emissive(material))
+    {
+      const auto normal = cross(subtract(triangle.v1, triangle.v0), subtract(triangle.v2, triangle.v0));
+      const float double_area = length(normal);
+      const float area = double_area * 0.5F;
+      scene::Vec3 normalized_normal = double_area > 0.0F
+                                        ? scene::Vec3{normal.x / double_area, normal.y / double_area, normal.z / double_area}
+                                        : scene::Vec3{0.0F, -1.0F, 0.0F};
+      if(normalized_normal.y > 0.0F)
+      {
+        normalized_normal = scale(normalized_normal, -1.0F);
+      }
+      GpuLightTriangle light{};
+      write_vec3(light.v0, triangle.v0, 0.0F);
+      write_vec3(light.v1, triangle.v1, 0.0F);
+      write_vec3(light.v2, triangle.v2, 0.0F);
+      write_vec3(light.emission, material.emission, 0.0F);
+      write_vec3(light.normal_area, normalized_normal, area);
+      lights.push_back(light);
+    }
   }
+  if(lights.empty())
+  {
+    lights.push_back(GpuLightTriangle{});
+  }
+  light_count_ = static_cast<std::uint32_t>(lights.size());
 
   std::vector<GpuMaterial> materials;
   materials.reserve(scene_materials.size());
@@ -146,6 +236,19 @@ void RayTracingScene::build_scene(const VulkanDevice &device, const VulkanAlloca
   std::copy(materials.begin(), materials.end(), material_data);
   material_buffer_->flush();
   material_buffer_->unmap();
+
+  light_buffer_ = std::make_unique<VulkanBuffer>(allocator,
+    BufferCreateInfo{
+      .size = static_cast<VkDeviceSize>(lights.size() * sizeof(GpuLightTriangle)),
+      .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    });
+
+  auto *light_data = static_cast<GpuLightTriangle *>(light_buffer_->map());
+  std::copy(lights.begin(), lights.end(), light_data);
+  light_buffer_->flush();
+  light_buffer_->unmap();
 
   VkAccelerationStructureGeometryTrianglesDataKHR triangles{};
   triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
@@ -347,7 +450,5 @@ instances pointing to it.
 https://docs.vulkan.org/tutorial/latest/courses/18_Ray_tracing/02_Acceleration_structures.html
 https://nvpro-samples.github.io/vk_raytracing_tutorial_KHR/
 */
-
-
 
 

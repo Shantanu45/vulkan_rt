@@ -45,6 +45,15 @@ struct SmokeGpuMaterial
   float emission[4]{};
 };
 
+struct SmokeGpuLightTriangle
+{
+  float v0[4]{};
+  float v1[4]{};
+  float v2[4]{};
+  float emission[4]{};
+  float normal_area[4]{};
+};
+
 std::string vulkan_result_message(const char *operation, VkResult result)
 {
   return std::string{operation} + " failed with VkResult " + std::to_string(static_cast<int>(result));
@@ -510,6 +519,25 @@ int vulkan_rt_descriptor_smoke_test(const AppConfig &config)
   std::copy(smoke_vertices.begin(), smoke_vertices.end(), vertex_data);
   vertex_buffer.flush();
   vertex_buffer.unmap();
+  const SmokeGpuLightTriangle smoke_light{
+    .v0 = {0.0F, -0.5F, 0.0F, 0.0F},
+    .v1 = {0.5F, 0.5F, 0.0F, 0.0F},
+    .v2 = {-0.5F, 0.5F, 0.0F, 0.0F},
+    .emission = {1.0F, 1.0F, 1.0F, 0.0F},
+    .normal_area = {0.0F, 0.0F, 1.0F, 0.5F},
+  };
+  render::vulkan::VulkanBuffer light_buffer{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = sizeof(SmokeGpuLightTriangle),
+      .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    }};
+  auto *light_data = static_cast<SmokeGpuLightTriangle *>(light_buffer.map());
+  *light_data = smoke_light;
+  light_buffer.flush();
+  light_buffer.unmap();
 
   render::vulkan::VulkanBuffer material_index_buffer{
     allocator,
@@ -544,7 +572,7 @@ int vulkan_rt_descriptor_smoke_test(const AppConfig &config)
   const scene::Camera camera;
   const render::vulkan::RayTracingCamera ray_tracing_camera{allocator, camera};
   render::vulkan::RayTracingFrameData frame_data{allocator};
-  frame_data.update(render::vulkan::GpuRayTracingFrameData{});
+  frame_data.update(render::vulkan::GpuRayTracingFrameData{.light_count = 1});
   const render::vulkan::RayTracingDescriptorSet descriptors{
     device,
     tlas,
@@ -555,6 +583,7 @@ int vulkan_rt_descriptor_smoke_test(const AppConfig &config)
     material_buffer,
     ray_tracing_camera.buffer(),
     frame_data.buffer(),
+    light_buffer,
   };
 
   LOGI("Vulkan ray tracing descriptor smoke passed:");
@@ -606,6 +635,7 @@ int vulkan_trace_smoke_test(const AppConfig &config)
     render::vulkan::BufferCreateInfo{
       .size = static_cast<VkDeviceSize>(vertices.size() * sizeof(float)),
       .usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
       .memory_usage = VMA_MEMORY_USAGE_AUTO,
       .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -785,6 +815,25 @@ int vulkan_trace_smoke_test(const AppConfig &config)
       .memory_usage = VMA_MEMORY_USAGE_AUTO,
     },
   };
+  const SmokeGpuLightTriangle smoke_light{
+    .v0 = {0.0F, -0.5F, 0.0F, 0.0F},
+    .v1 = {0.5F, 0.5F, 0.0F, 0.0F},
+    .v2 = {-0.5F, 0.5F, 0.0F, 0.0F},
+    .emission = {1.0F, 1.0F, 1.0F, 0.0F},
+    .normal_area = {0.0F, 0.0F, 1.0F, 0.5F},
+  };
+  render::vulkan::VulkanBuffer light_buffer{
+    allocator,
+    render::vulkan::BufferCreateInfo{
+      .size = sizeof(SmokeGpuLightTriangle),
+      .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    }};
+  auto *light_data = static_cast<SmokeGpuLightTriangle *>(light_buffer.map());
+  *light_data = smoke_light;
+  light_buffer.flush();
+  light_buffer.unmap();
 
   render::vulkan::VulkanBuffer material_index_buffer{
     allocator,
@@ -819,7 +868,7 @@ int vulkan_trace_smoke_test(const AppConfig &config)
   const scene::Camera camera;
   const render::vulkan::RayTracingCamera ray_tracing_camera{allocator, camera};
   render::vulkan::RayTracingFrameData frame_data{allocator};
-  frame_data.update(render::vulkan::GpuRayTracingFrameData{});
+  frame_data.update(render::vulkan::GpuRayTracingFrameData{.light_count = 1});
   const render::vulkan::RayTracingDescriptorSet descriptors{
     device,
     tlas,
@@ -830,6 +879,7 @@ int vulkan_trace_smoke_test(const AppConfig &config)
     material_buffer,
     ray_tracing_camera.buffer(),
     frame_data.buffer(),
+    light_buffer,
   };
 
   const std::filesystem::path shader_dir{vulkan_rt::cmake::shader_dir};

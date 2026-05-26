@@ -21,7 +21,8 @@ public:
     const VulkanBuffer &material_indices,
     const VulkanBuffer &materials,
     const VulkanBuffer &camera,
-    const VulkanBuffer &frame_data);
+    const VulkanBuffer &frame_data,
+    const VulkanBuffer &lights);
   ~RayTracingDescriptorSet();
 
   RayTracingDescriptorSet(RayTracingDescriptorSet &&other) noexcept;
@@ -44,7 +45,8 @@ private:
     const VulkanBuffer &material_indices,
     const VulkanBuffer &materials,
     const VulkanBuffer &camera,
-    const VulkanBuffer &frame_data);
+    const VulkanBuffer &frame_data,
+    const VulkanBuffer &lights);
   void destroy();
 
   VkDevice device_ = VK_NULL_HANDLE;

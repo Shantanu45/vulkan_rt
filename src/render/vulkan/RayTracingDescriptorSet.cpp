@@ -32,11 +32,12 @@ RayTracingDescriptorSet::RayTracingDescriptorSet(
   const VulkanBuffer &material_indices,
   const VulkanBuffer &materials,
   const VulkanBuffer &camera,
-  const VulkanBuffer &frame_data)
+  const VulkanBuffer &frame_data,
+  const VulkanBuffer &lights)
 {
   try
   {
-    create(device, tlas, output_image, accumulation_image, vertices, material_indices, materials, camera, frame_data);
+    create(device, tlas, output_image, accumulation_image, vertices, material_indices, materials, camera, frame_data, lights);
   }
   catch(...)
   {
@@ -106,6 +107,7 @@ VkDescriptorSet RayTracingDescriptorSet::descriptor_set() const
  * Shader binding 5 = accumulation image.
  * Shader binding 6 = frame data uniform buffer.
  * Shader binding 7 = triangle vertex buffer.
+ * Shader binding 8 = emissive light triangle buffer.
  * 
  * \param device
  * \param tlas
@@ -122,11 +124,12 @@ void RayTracingDescriptorSet::create(
   const VulkanBuffer &material_indices,
   const VulkanBuffer &materials,
   const VulkanBuffer &camera,
-  const VulkanBuffer &frame_data)
+  const VulkanBuffer &frame_data,
+  const VulkanBuffer &lights)
 {
   device_ = device.device();
 
-  std::array<VkDescriptorSetLayoutBinding, 8> bindings{};
+  std::array<VkDescriptorSetLayoutBinding, 9> bindings{};
   bindings[0].binding = 0;
   bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
   bindings[0].descriptorCount = 1;
@@ -167,6 +170,11 @@ void RayTracingDescriptorSet::create(
   bindings[7].descriptorCount = 1;
   bindings[7].stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
 
+  bindings[8].binding = 8;
+  bindings[8].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  bindings[8].descriptorCount = 1;
+  bindings[8].stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+
   VkDescriptorSetLayoutCreateInfo layout_info{};
   layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
   layout_info.bindingCount = static_cast<std::uint32_t>(bindings.size());
@@ -180,7 +188,7 @@ void RayTracingDescriptorSet::create(
   pool_sizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
   pool_sizes[1].descriptorCount = 2;
   pool_sizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  pool_sizes[2].descriptorCount = 3;
+  pool_sizes[2].descriptorCount = 4;
   pool_sizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
   pool_sizes[3].descriptorCount = 2;
 
@@ -239,6 +247,20 @@ void RayTracingDescriptorSet::create(
   vertex_write.descriptorCount = 1;
   vertex_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   vertex_write.pBufferInfo = &vertex_info;
+
+  // Write Binding 8: Light Triangles
+  VkDescriptorBufferInfo light_info{};
+  light_info.buffer = lights.buffer();
+  light_info.offset = 0;
+  light_info.range = lights.size();
+
+  VkWriteDescriptorSet light_write{};
+  light_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  light_write.dstSet = descriptor_set_;
+  light_write.dstBinding = 8;
+  light_write.descriptorCount = 1;
+  light_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  light_write.pBufferInfo = &light_info;
 
   // Write Binding 5: Accumulation Image
   VkDescriptorImageInfo accumulation_image_info{};
@@ -310,7 +332,7 @@ void RayTracingDescriptorSet::create(
   frame_data_write.pBufferInfo = &frame_data_info;
 
   // Update the Descriptor Set
-  std::array<VkWriteDescriptorSet, 8> writes{
+  std::array<VkWriteDescriptorSet, 9> writes{
       tlas_write, 
       output_write, 
       material_index_write, 
@@ -318,7 +340,8 @@ void RayTracingDescriptorSet::create(
       camera_write,
       accumulation_write,
       frame_data_write,
-      vertex_write};
+      vertex_write,
+      light_write};
   vkUpdateDescriptorSets(device_, static_cast<std::uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }
 

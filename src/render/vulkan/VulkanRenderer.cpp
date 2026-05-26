@@ -97,6 +97,7 @@ void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scen
     .sample_index = sample_index_,
     .frame_index = static_cast<std::uint32_t>(frame_info.frame_index),
     .reset_accumulation = frame_info.reset_accumulation ? 1U : 0U,
+    .light_count = ray_tracing_->scene->light_count(),
   });
 
   const auto frame_index = frames_.current_frame_index();
@@ -221,7 +222,8 @@ void VulkanRenderer::create_ray_tracing_resources(const scene::Scene &scene, con
     ray_tracing_->scene->material_index_buffer(),
     ray_tracing_->scene->material_buffer(),
     ray_tracing_->camera->buffer(),
-    ray_tracing_->frame_data->buffer());
+    ray_tracing_->frame_data->buffer(),
+    ray_tracing_->scene->light_buffer());
 
   const std::filesystem::path shader_dir{vulkan_rt::cmake::shader_dir};
   ray_tracing_->raygen_shader = std::make_unique<ShaderModule>(device_, shader_dir / "raygen.rgen.spv");

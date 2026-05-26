@@ -12,7 +12,7 @@ struct GpuRayTracingFrameData
   std::uint32_t sample_index = 0;
   std::uint32_t frame_index = 0;
   std::uint32_t reset_accumulation = 0;
-  std::uint32_t _padding = 0;
+  std::uint32_t light_count = 0;
 };
 
 static_assert(sizeof(GpuRayTracingFrameData) == 16);
