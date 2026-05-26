@@ -79,6 +79,23 @@ struct RayPayload
 
 layout(location = 0) rayPayloadEXT RayPayload payload;
 
+const float display_exposure = 1.0;
+
+vec3 linear_to_srgb(vec3 color)
+{
+  return pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
+}
+
+vec3 tonemap_reinhard(vec3 color)
+{
+  return color / (color + vec3(1.0));
+}
+
+vec3 make_display_color(vec3 hdr_color)
+{
+  return linear_to_srgb(tonemap_reinhard(hdr_color * display_exposure));
+}
+
 // This hashes an integer into a pseudo-random-looking integer.
 uint hash_u32(uint value)
 {
@@ -261,5 +278,5 @@ void main()
   const vec3 accumulated = reset ? current_sample : previous + (current_sample - previous) / sample_count;
 
   imageStore(accumulation_image, pixel, vec4(accumulated, 1.0));
-  imageStore(output_image, pixel, vec4(clamp(accumulated, vec3(0.0), vec3(1.0)), 1.0));
+  imageStore(output_image, pixel, vec4(clamp(make_display_color(accumulated), vec3(0.0), vec3(1.0)), 1.0));
 }
