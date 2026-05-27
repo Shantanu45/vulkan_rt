@@ -1,4 +1,6 @@
 /*
+A Ray Generation Shader runs on a 2D grid of threads. It begins the entire ray-tracing operation
+
 Only two built-in variables are accessible in the ray generation shader, namely uvec3 gl_LaunchIDEXT and uvec3 gl_LaunchSizeEXT.
 
 - The input variable gl_LaunchIDEXT is available in the ray generation,
