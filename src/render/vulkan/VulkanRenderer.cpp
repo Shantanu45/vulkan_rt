@@ -248,7 +248,7 @@ void VulkanRenderer::create_ray_tracing_resources(const scene::Scene &scene, con
     ray_tracing_->scene->light_buffer());
 
   const std::filesystem::path shader_dir{vulkan_rt::cmake::shader_dir};
-  ray_tracing_->raygen_shader = std::make_unique<ShaderModule>(device_, shader_dir / "raygen.rgen.spv");
+  ray_tracing_->raygen_shader = std::make_unique<ShaderModule>(device_, shader_dir / "raygen_dome.rgen.spv");
   ray_tracing_->miss_shader = std::make_unique<ShaderModule>(device_, shader_dir / "miss.rmiss.spv");
   ray_tracing_->closest_hit_shader = std::make_unique<ShaderModule>(device_, shader_dir / "closesthit.rchit.spv");
   ray_tracing_->pipeline = std::make_unique<RayTracingPipeline>(device_,

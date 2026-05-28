@@ -131,6 +131,7 @@ find_package(Vulkan REQUIRED COMPONENTS glslc)
 
 set(vulkan_rt_shader_sources
     "${CMAKE_SOURCE_DIR}/shaders/raygen.rgen"
+    "${CMAKE_SOURCE_DIR}/shaders/raygen_dome.rgen"
     "${CMAKE_SOURCE_DIR}/shaders/miss.rmiss"
     "${CMAKE_SOURCE_DIR}/shaders/closesthit.rchit"
 )
@@ -162,6 +163,7 @@ function(vulkan_rt_compile_shader shader_source shader_stage)
 endfunction()
 
 vulkan_rt_compile_shader("${CMAKE_SOURCE_DIR}/shaders/raygen.rgen" rgen)
+vulkan_rt_compile_shader("${CMAKE_SOURCE_DIR}/shaders/raygen_dome.rgen" rgen)
 vulkan_rt_compile_shader("${CMAKE_SOURCE_DIR}/shaders/miss.rmiss" rmiss)
 vulkan_rt_compile_shader("${CMAKE_SOURCE_DIR}/shaders/closesthit.rchit" rchit)
 

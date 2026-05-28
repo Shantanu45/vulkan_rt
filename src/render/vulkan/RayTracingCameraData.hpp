@@ -12,6 +12,7 @@ struct RayTracingCameraData
   float up[4]{};
 };
 
+
 static_assert(sizeof(RayTracingCameraData) == 64);
 
 inline void write_ray_tracing_camera_vec3(float (&target)[4], scene::Vec3 source, float w)

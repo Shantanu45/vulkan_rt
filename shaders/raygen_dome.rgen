@@ -22,6 +22,18 @@ Only two built-in variables are accessible in the ray generation shader, namely 
 #define EPSILON 0.001
 #define FAR_CLIP 1.0e30
 
+// Camera projection modes.
+// Keep this as DOME_MASTER for a planetarium dome master render.
+// Change to PERSPECTIVE if you want the original pinhole camera behavior.
+#define CAMERA_MODE_PERSPECTIVE 0
+#define CAMERA_MODE_DOME_MASTER 1
+#define CAMERA_MODE CAMERA_MODE_PERSPECTIVE
+
+// 180 degrees is the usual full-dome / planetarium dome master.
+// In this mapping, the center of the image points along camera.forward_aspect.xyz,
+// and the edge of the circular image is 90 degrees away from that center direction.
+#define DOME_FOV_DEGREES 180.0
+
 layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;
 layout(set = 0, binding = 1, rgba8) uniform image2D output_image;
 layout(set = 0, binding = 5, rgba32f) uniform image2D accumulation_image;
@@ -246,6 +258,70 @@ vec3 estimate_direct_light(vec3 hit_position, vec3 normal, vec3 albedo, inout ui
   return brdf * light.emission.rgb * geometry / pdf;
 }
 
+
+bool generate_camera_ray(vec2 pixel_sample, out vec3 origin, out vec3 direction)
+{
+  origin = camera.position_fov_y.xyz;
+
+#if CAMERA_MODE == CAMERA_MODE_DOME_MASTER
+  // Planetarium dome master / equidistant fisheye projection.
+  //
+  // The render target should be square for a standard dome master.
+  // Pixels outside the central circle are black.
+  //
+  // p is in [-1, +1], with (0,0) at the image center.
+  vec2 uv = pixel_sample / vec2(gl_LaunchSizeEXT.xy);
+  vec2 p = uv * 2.0 - 1.0;
+
+  // Flip Y so positive p.y means "up" in image space.
+  p.y = -p.y;
+
+  float radius = length(p);
+
+  if(radius > 1.0)
+  {
+    direction = vec3(0.0, 0.0, 0.0);
+    return false;
+  }
+
+  // For a 180-degree dome master, theta goes from:
+  // center: 0 degrees
+  // edge:   90 degrees
+  //
+  // More generally, theta = radius * half_fov.
+  float half_fov = radians(DOME_FOV_DEGREES) * 0.5;
+  float theta = radius * half_fov;
+  float phi = atan(p.y, p.x);
+
+  vec3 forward = normalize(camera.forward_aspect.xyz);
+  vec3 right = normalize(camera.right.xyz);
+  vec3 up = normalize(camera.up.xyz);
+
+  direction = normalize(
+    forward * cos(theta) +
+    right * (cos(phi) * sin(theta)) +
+    up * (sin(phi) * sin(theta))
+  );
+
+  return true;
+
+#else
+  // Original perspective camera projection.
+  vec2 uv = pixel_sample / vec2(gl_LaunchSizeEXT.xy);
+  vec2 screen = uv * 2.0 - 1.0;
+
+  float tan_half_fov_y = tan(radians(camera.position_fov_y.w) * 0.5);
+
+  direction = normalize(
+    camera.forward_aspect.xyz +
+    camera.right.xyz * screen.x * camera.forward_aspect.w * tan_half_fov_y -
+    camera.up.xyz * screen.y * tan_half_fov_y
+  );
+
+  return true;
+#endif
+}
+
 void main()
 {
   uint rng_state =
@@ -259,17 +335,20 @@ void main()
     : vec2(0.5);
 
   vec2 pixel_sample = vec2(gl_LaunchIDEXT.xy) + pixel_jitter;
-  vec2 uv = pixel_sample / vec2(gl_LaunchSizeEXT.xy);
-  vec2 screen = uv * 2.0 - 1.0;
 
-  float tan_half_fov_y = tan(radians(camera.position_fov_y.w) * 0.5);
+  vec3 origin;
+  vec3 direction;
+  bool valid_camera_ray = generate_camera_ray(pixel_sample, origin, direction);
 
-  vec3 origin = camera.position_fov_y.xyz;
-  vec3 direction = normalize(
-    camera.forward_aspect.xyz +
-    camera.right.xyz * screen.x * camera.forward_aspect.w * tan_half_fov_y -
-    camera.up.xyz * screen.y * tan_half_fov_y
-  );
+  ivec2 pixel = ivec2(gl_LaunchIDEXT.xy);
+
+  // Dome master images are circular. Pixels outside the circle are intentionally black.
+  if(!valid_camera_ray)
+  {
+    imageStore(accumulation_image, pixel, vec4(0.0, 0.0, 0.0, 1.0));
+    imageStore(output_image, pixel, vec4(0.0, 0.0, 0.0, 1.0));
+    return;
+  }
 
   vec3 path_origin = origin;
   vec3 path_direction = direction;
@@ -352,8 +431,6 @@ void main()
     // shoot ray at random bounce direction. The ray scatters around the surface normal.
     path_direction = cosine_weighted_hemisphere(normal, rng_state);
   }
-
-  ivec2 pixel = ivec2(gl_LaunchIDEXT.xy);
 
   vec3 current_sample = radiance;
   vec3 previous = imageLoad(accumulation_image, pixel).rgb;
