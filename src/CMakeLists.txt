@@ -202,7 +202,7 @@ find_package(volk REQUIRED)
 find_package(libassert REQUIRED)
 find_package(sdl3 REQUIRED)
 find_package(VulkanMemoryAllocator REQUIRED)
-find_package(TinyGLTF REQUIRED)
+find_package(TinyGLTF CONFIG REQUIRED)
 
 target_link_libraries(
   ${PROJECT_NAME}
