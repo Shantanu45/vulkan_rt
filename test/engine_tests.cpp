@@ -78,8 +78,8 @@ TEST_CASE("engine owns the configured procedural scene")
   vulkan_rt::engine::Engine engine{{}};
 
   CHECK_FALSE(engine.scene().empty());
-  CHECK(engine.scene().materials().size() == 4);
-  CHECK(engine.scene().triangles().size() == 12);
+  CHECK(engine.scene().materials().size() == 6);
+  CHECK(engine.scene().triangles().size() == 36);
 }
 
 TEST_CASE("engine updates camera aspect ratio on resize")

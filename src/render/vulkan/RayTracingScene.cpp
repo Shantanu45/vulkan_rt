@@ -17,6 +17,7 @@ struct GpuMaterial
 {
   float albedo[4]{};
   float emission[4]{};
+  float params[4]{};
 };
 
 struct GpuLightTriangle
@@ -190,7 +191,11 @@ void RayTracingScene::build_scene(const VulkanDevice &device, const VulkanAlloca
   {
     materials.push_back(GpuMaterial{
       .albedo = {material.albedo.x, material.albedo.y, material.albedo.z, material.roughness},
-      .emission = {material.emission.x, material.emission.y, material.emission.z, 0.0F},
+      .emission = {material.emission.x,
+        material.emission.y,
+        material.emission.z,
+        static_cast<float>(static_cast<std::uint32_t>(material.type))},
+      .params = {material.ior, 0.0F, 0.0F, 0.0F},
     });
   }
 
@@ -450,5 +455,4 @@ instances pointing to it.
 https://docs.vulkan.org/tutorial/latest/courses/18_Ray_tracing/02_Acceleration_structures.html
 https://nvpro-samples.github.io/vk_raytracing_tutorial_KHR/
 */
-
 

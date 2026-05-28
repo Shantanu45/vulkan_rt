@@ -8,11 +8,11 @@ struct RayPayload
   vec3 hit_position;
   float _pad0;
   vec3 normal;
-  float _pad1;
+  float roughness;
   vec3 albedo;
-  float _pad2;
+  uint material_type;
   vec3 emission;
-  float _pad3;
+  float ior;
 };
 
 layout(location = 0) rayPayloadInEXT RayPayload payload;
@@ -21,6 +21,7 @@ struct Material
 {
   vec4 albedo;
   vec4 emission;
+  vec4 params;
 };
 
 layout(set = 0, binding = 2, std430) readonly buffer MaterialIndices
@@ -53,5 +54,8 @@ void main()
   payload.hit_position = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
   payload.normal = faceforward(geometric_normal, gl_WorldRayDirectionEXT, geometric_normal);
   payload.albedo = material.albedo.rgb;
+  payload.roughness = material.albedo.a;
+  payload.material_type = uint(material.emission.a + 0.5);
   payload.emission = material.emission.rgb;
+  payload.ior = material.params.x;
 }

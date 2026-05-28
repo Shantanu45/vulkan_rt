@@ -12,11 +12,21 @@ struct Vec3
   float z = 0.0F;
 };
 
+enum class MaterialType : std::uint32_t
+{
+  Diffuse = 0,
+  Metal = 1,
+  Dielectric = 2,
+  Emissive = 3,
+};
+
 struct Material
 {
   Vec3 albedo{ 1.0F, 1.0F, 1.0F };
   Vec3 emission{};
+  MaterialType type = MaterialType::Diffuse;
   float roughness = 1.0F;
+  float ior = 1.5F;
 };
 
 struct Triangle

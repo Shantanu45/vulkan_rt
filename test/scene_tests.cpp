@@ -23,8 +23,8 @@ TEST_CASE("procedural scene contains renderable geometry")
   const auto scene = vulkan_rt::scene::make_procedural_scene();
 
   CHECK_FALSE(scene.empty());
-  CHECK(scene.materials().size() == 4);
-  CHECK(scene.triangles().size() == 12);
+  CHECK(scene.materials().size() == 6);
+  CHECK(scene.triangles().size() == 36);
 }
 
 TEST_CASE("procedural scene triangles reference valid materials")
@@ -48,6 +48,18 @@ TEST_CASE("procedural scene materials have sane values")
 
   CHECK(has_emissive_material);
 
+  const auto has_metal_material =
+    std::any_of(scene.materials().begin(), scene.materials().end(), [](const auto &material) {
+      return material.type == vulkan_rt::scene::MaterialType::Metal;
+    });
+  const auto has_dielectric_material =
+    std::any_of(scene.materials().begin(), scene.materials().end(), [](const auto &material) {
+      return material.type == vulkan_rt::scene::MaterialType::Dielectric;
+    });
+
+  CHECK(has_metal_material);
+  CHECK(has_dielectric_material);
+
   for(const auto &material : scene.materials())
   {
     CHECK(color_in_range(material.albedo, 0.0F, 1.0F));
@@ -56,5 +68,6 @@ TEST_CASE("procedural scene materials have sane values")
     CHECK(material.emission.x >= 0.0F);
     CHECK(material.emission.y >= 0.0F);
     CHECK(material.emission.z >= 0.0F);
+    CHECK(material.ior >= 1.0F);
   }
 }

@@ -22,6 +22,11 @@ Only two built-in variables are accessible in the ray generation shader, namely 
 #define EPSILON 0.001
 #define FAR_CLIP 1.0e30
 
+#define MATERIAL_DIFFUSE 0u
+#define MATERIAL_METAL 1u
+#define MATERIAL_DIELECTRIC 2u
+#define MATERIAL_EMISSIVE 3u
+
 // Camera projection modes.
 // Keep this as DOME_MASTER for a planetarium dome master render.
 // Change to PERSPECTIVE if you want the original pinhole camera behavior.
@@ -83,11 +88,11 @@ struct RayPayload
   vec3 hit_position;
   float _pad0;
   vec3 normal;
-  float _pad1;
+  float roughness;
   vec3 albedo;
-  float _pad2;
+  uint material_type;
   vec3 emission;
-  float _pad3;
+  float ior;
 };
 
 layout(location = 0) rayPayloadEXT RayPayload payload;
@@ -130,8 +135,11 @@ void reset_payload()
   payload.hit = 0u;
   payload.hit_position = vec3(0.0);
   payload.normal = vec3(0.0, 1.0, 0.0);
+  payload.roughness = 1.0;
   payload.albedo = vec3(0.0);
+  payload.material_type = MATERIAL_DIFFUSE;
   payload.emission = vec3(0.0);
+  payload.ior = 1.5;
 }
 
 // cosine_weighted_hemisphere simulates:
@@ -171,6 +179,24 @@ vec3 sample_triangle(vec3 v0, vec3 v1, vec3 v2, inout uint state)
   return v0 * (1.0 - su) +
          v1 * (su * (1.0 - v)) +
          v2 * (su * v);
+}
+
+float schlick_fresnel(float cosine, float ior)
+{
+  float r0 = (1.0 - ior) / (1.0 + ior);
+  r0 *= r0;
+  return r0 + (1.0 - r0) * pow(1.0 - cosine, 5.0);
+}
+
+vec3 rough_reflection_direction(vec3 incoming, vec3 normal, float roughness, inout uint state)
+{
+  vec3 reflected = reflect(normalize(incoming), normalize(normal));
+  if(roughness <= 0.0)
+  {
+    return reflected;
+  }
+
+  return normalize(mix(reflected, cosine_weighted_hemisphere(normal, state), clamp(roughness, 0.0, 1.0)));
 }
 
 // shoots a ray toward the light. If something blocks it: in shadow
@@ -395,10 +421,12 @@ void main()
       break;
     }
 
+    uint material_type = payload.material_type;
     vec3 normal = normalize(payload.normal);
     vec3 albedo = clamp(payload.albedo, vec3(0.0), vec3(1.0));
+    float roughness = clamp(payload.roughness, 0.0, 1.0);
 
-    if(frame_data.direct_lighting_enabled != 0u)
+    if(material_type == MATERIAL_DIFFUSE && frame_data.direct_lighting_enabled != 0u)
     {
     // Instead of waiting for random bounces to eventually hit a light,
     // the shader directly samples a light source (i.e Next Event Estimation).
@@ -408,6 +436,36 @@ void main()
         albedo,
         rng_state
       );
+    }
+
+    if(material_type == MATERIAL_METAL)
+    {
+      throughput *= albedo;
+      path_origin = payload.hit_position + normal * EPSILON;
+      path_direction = rough_reflection_direction(path_direction, normal, roughness, rng_state);
+      if(dot(path_direction, normal) <= 0.0)
+      {
+        break;
+      }
+      continue;
+    }
+
+    if(material_type == MATERIAL_DIELECTRIC)
+    {
+      vec3 unit_direction = normalize(path_direction);
+      float ior = max(payload.ior, 1.01);
+      float cos_theta = min(dot(-unit_direction, normal), 1.0);
+      float sin_theta = sqrt(max(0.0, 1.0 - cos_theta * cos_theta));
+      float eta_ratio = 1.0 / ior;
+      bool cannot_refract = eta_ratio * sin_theta > 1.0;
+      bool reflect_ray = cannot_refract || schlick_fresnel(cos_theta, ior) > random_float(rng_state);
+
+      throughput *= albedo;
+      path_origin = payload.hit_position + normal * EPSILON;
+      path_direction = reflect_ray
+        ? rough_reflection_direction(unit_direction, normal, roughness, rng_state)
+        : normalize(refract(unit_direction, normal, eta_ratio));
+      continue;
     }
 
     throughput *= albedo;

@@ -43,6 +43,7 @@ struct SmokeGpuMaterial
 {
   float albedo[4]{};
   float emission[4]{};
+  float params[4]{};
 };
 
 struct SmokeGpuLightTriangle
@@ -555,6 +556,7 @@ int vulkan_rt_descriptor_smoke_test(const AppConfig &config)
   const SmokeGpuMaterial smoke_material{
     .albedo = {0.8F, 0.7F, 0.6F, 1.0F},
     .emission = {0.0F, 0.0F, 0.0F, 0.0F},
+    .params = {1.5F, 0.0F, 0.0F, 0.0F},
   };
   render::vulkan::VulkanBuffer material_buffer{
     allocator,
@@ -851,6 +853,7 @@ int vulkan_trace_smoke_test(const AppConfig &config)
   const SmokeGpuMaterial smoke_material{
     .albedo = {0.8F, 0.7F, 0.6F, 1.0F},
     .emission = {0.0F, 0.0F, 0.0F, 0.0F},
+    .params = {1.5F, 0.0F, 0.0F, 0.0F},
   };
   render::vulkan::VulkanBuffer material_buffer{
     allocator,
