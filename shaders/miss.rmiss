@@ -6,7 +6,7 @@ struct RayPayload
   vec3 radiance;
   uint hit;
   vec3 hit_position;
-  float _pad0;
+  uint front_face;
   vec3 normal;
   float roughness;
   vec3 albedo;
@@ -22,6 +22,7 @@ void main()
   payload.hit = 0u;
   payload.radiance = vec3(0.04, 0.06, 0.10);
   payload.hit_position = vec3(0.0);
+  payload.front_face = 1u;
   payload.normal = vec3(0.0, 1.0, 0.0);
   payload.roughness = 1.0;
   payload.albedo = vec3(0.0);

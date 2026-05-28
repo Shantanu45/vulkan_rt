@@ -8,7 +8,7 @@
 namespace vulkan_rt::render {
 struct RendererSettings
 {
-  std::uint32_t max_bounces = 2;
+  std::uint32_t max_bounces = 5;
   bool direct_lighting_enabled = true;
   bool jitter_enabled = true;
   float exposure = 1.0F;

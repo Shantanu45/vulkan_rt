@@ -24,7 +24,7 @@ TEST_CASE("procedural scene contains renderable geometry")
 
   CHECK_FALSE(scene.empty());
   CHECK(scene.materials().size() == 6);
-  CHECK(scene.triangles().size() == 36);
+  CHECK(scene.triangles().size() == 1080);
 }
 
 TEST_CASE("procedural scene triangles reference valid materials")

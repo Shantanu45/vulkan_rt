@@ -79,7 +79,7 @@ TEST_CASE("engine owns the configured procedural scene")
 
   CHECK_FALSE(engine.scene().empty());
   CHECK(engine.scene().materials().size() == 6);
-  CHECK(engine.scene().triangles().size() == 36);
+  CHECK(engine.scene().triangles().size() == 1080);
 }
 
 TEST_CASE("engine updates camera aspect ratio on resize")

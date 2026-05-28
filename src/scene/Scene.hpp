@@ -34,6 +34,9 @@ struct Triangle
   Vec3 v0{};
   Vec3 v1{};
   Vec3 v2{};
+  Vec3 n0{};
+  Vec3 n1{};
+  Vec3 n2{};
   std::uint32_t material_index = 0;
 };
 

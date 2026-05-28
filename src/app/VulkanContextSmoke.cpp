@@ -46,6 +46,12 @@ struct SmokeGpuMaterial
   float params[4]{};
 };
 
+struct SmokeGpuVertex
+{
+  float position[4]{};
+  float normal[4]{};
+};
+
 struct SmokeGpuLightTriangle
 {
   float v0[4]{};
@@ -497,26 +503,20 @@ int vulkan_rt_descriptor_smoke_test(const AppConfig &config)
       .memory_usage = VMA_MEMORY_USAGE_AUTO,
     },
   };
-  constexpr std::array<float, 9> smoke_vertices{
-    0.0F,
-    -0.5F,
-    0.0F,
-    0.5F,
-    0.5F,
-    0.0F,
-    -0.5F,
-    0.5F,
-    0.0F,
+  constexpr std::array<SmokeGpuVertex, 3> smoke_vertices{
+    SmokeGpuVertex{.position = {0.0F, -0.5F, 0.0F, 0.0F}, .normal = {0.0F, 0.0F, 1.0F, 0.0F}},
+    SmokeGpuVertex{.position = {0.5F, 0.5F, 0.0F, 0.0F}, .normal = {0.0F, 0.0F, 1.0F, 0.0F}},
+    SmokeGpuVertex{.position = {-0.5F, 0.5F, 0.0F, 0.0F}, .normal = {0.0F, 0.0F, 1.0F, 0.0F}},
   };
   render::vulkan::VulkanBuffer vertex_buffer{
     allocator,
     render::vulkan::BufferCreateInfo{
-      .size = static_cast<VkDeviceSize>(smoke_vertices.size() * sizeof(float)),
+      .size = static_cast<VkDeviceSize>(smoke_vertices.size() * sizeof(SmokeGpuVertex)),
       .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       .memory_usage = VMA_MEMORY_USAGE_AUTO,
       .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
     }};
-  auto *vertex_data = static_cast<float *>(vertex_buffer.map());
+  auto *vertex_data = static_cast<SmokeGpuVertex *>(vertex_buffer.map());
   std::copy(smoke_vertices.begin(), smoke_vertices.end(), vertex_data);
   vertex_buffer.flush();
   vertex_buffer.unmap();
@@ -620,22 +620,16 @@ int vulkan_trace_smoke_test(const AppConfig &config)
   render::vulkan::VulkanDevice device{context, vulkan_config};
   render::vulkan::VulkanAllocator allocator{context, device};
 
-  constexpr std::array<float, 9> vertices{
-    0.0F,
-    -0.5F,
-    0.0F,
-    0.5F,
-    0.5F,
-    0.0F,
-    -0.5F,
-    0.5F,
-    0.0F,
+  constexpr std::array<SmokeGpuVertex, 3> vertices{
+    SmokeGpuVertex{.position = {0.0F, -0.5F, 0.0F, 0.0F}, .normal = {0.0F, 0.0F, 1.0F, 0.0F}},
+    SmokeGpuVertex{.position = {0.5F, 0.5F, 0.0F, 0.0F}, .normal = {0.0F, 0.0F, 1.0F, 0.0F}},
+    SmokeGpuVertex{.position = {-0.5F, 0.5F, 0.0F, 0.0F}, .normal = {0.0F, 0.0F, 1.0F, 0.0F}},
   };
 
   render::vulkan::VulkanBuffer vertex_buffer{
     allocator,
     render::vulkan::BufferCreateInfo{
-      .size = static_cast<VkDeviceSize>(vertices.size() * sizeof(float)),
+      .size = static_cast<VkDeviceSize>(vertices.size() * sizeof(SmokeGpuVertex)),
       .usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -643,7 +637,7 @@ int vulkan_trace_smoke_test(const AppConfig &config)
       .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
     }};
 
-  auto *vertex_data = static_cast<float *>(vertex_buffer.map());
+  auto *vertex_data = static_cast<SmokeGpuVertex *>(vertex_buffer.map());
   std::copy(vertices.begin(), vertices.end(), vertex_data);
   vertex_buffer.flush();
   vertex_buffer.unmap();
@@ -652,8 +646,8 @@ int vulkan_trace_smoke_test(const AppConfig &config)
   triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
   triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
   triangles.vertexData.deviceAddress = vertex_buffer.device_address(device);
-  triangles.vertexStride = 3 * sizeof(float);
-  triangles.maxVertex = 3;
+  triangles.vertexStride = sizeof(SmokeGpuVertex);
+  triangles.maxVertex = 2;
   triangles.indexType = VK_INDEX_TYPE_NONE_KHR;
 
   VkAccelerationStructureGeometryKHR blas_geometry{};
@@ -1073,7 +1067,7 @@ int vulkan_triangle_blas_smoke_test(const AppConfig &config)
   triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
   triangles.vertexData.deviceAddress = vertex_buffer.device_address(device);
   triangles.vertexStride = 3 * sizeof(float);
-  triangles.maxVertex = 3;
+  triangles.maxVertex = 2;
   triangles.indexType = VK_INDEX_TYPE_NONE_KHR;
 
   VkAccelerationStructureGeometryKHR geometry{};
@@ -1195,7 +1189,7 @@ int vulkan_tlas_smoke_test(const AppConfig &config)
   triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
   triangles.vertexData.deviceAddress = vertex_buffer.device_address(device);
   triangles.vertexStride = 3 * sizeof(float);
-  triangles.maxVertex = 3;
+  triangles.maxVertex = 2;
   triangles.indexType = VK_INDEX_TYPE_NONE_KHR;
 
   VkAccelerationStructureGeometryKHR blas_geometry{};

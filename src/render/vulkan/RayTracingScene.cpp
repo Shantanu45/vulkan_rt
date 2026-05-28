@@ -20,6 +20,12 @@ struct GpuMaterial
   float params[4]{};
 };
 
+struct GpuVertex
+{
+  float position[4]{};
+  float normal[4]{};
+};
+
 struct GpuLightTriangle
 {
   float v0[4]{};
@@ -59,6 +65,16 @@ void write_vec3(float (&target)[4], scene::Vec3 value, float w)
   target[1] = value.y;
   target[2] = value.z;
   target[3] = w;
+}
+
+scene::Vec3 normalize_or(scene::Vec3 value, scene::Vec3 fallback)
+{
+  const float len = length(value);
+  if(len <= 0.0F)
+  {
+    return fallback;
+  }
+  return scene::Vec3{value.x / len, value.y / len, value.z / len};
 }
 
 bool is_emissive(scene::Material material)
@@ -140,21 +156,24 @@ void RayTracingScene::build_scene(const VulkanDevice &device, const VulkanAlloca
   const auto scene_materials = scene.materials();
   triangle_count_ = static_cast<std::uint32_t>(scene_triangles.size());
 
-  std::vector<float> vertices;
+  std::vector<GpuVertex> vertices;
   std::vector<std::uint32_t> material_indices;
   std::vector<GpuLightTriangle> lights;
-  vertices.reserve(scene_triangles.size() * 9);     // 3 floats per vertex * num of vertexes
+  vertices.reserve(scene_triangles.size() * 3);
   material_indices.reserve(scene_triangles.size());
-  const auto append_vertex = [&vertices](scene::Vec3 vertex) {
-    vertices.push_back(vertex.x);
-    vertices.push_back(vertex.y);
-    vertices.push_back(vertex.z);
+  const auto append_vertex = [&vertices](scene::Vec3 vertex, scene::Vec3 normal) {
+    GpuVertex gpu_vertex{};
+    write_vec3(gpu_vertex.position, vertex, 0.0F);
+    write_vec3(gpu_vertex.normal, normal, 0.0F);
+    vertices.push_back(gpu_vertex);
   };
   for(const auto &triangle : scene_triangles)
   {
-    append_vertex(triangle.v0);
-    append_vertex(triangle.v1);
-    append_vertex(triangle.v2);
+    const auto geometric_normal = normalize_or(
+      cross(subtract(triangle.v1, triangle.v0), subtract(triangle.v2, triangle.v0)), scene::Vec3{0.0F, 1.0F, 0.0F});
+    append_vertex(triangle.v0, normalize_or(triangle.n0, geometric_normal));
+    append_vertex(triangle.v1, normalize_or(triangle.n1, geometric_normal));
+    append_vertex(triangle.v2, normalize_or(triangle.n2, geometric_normal));
     material_indices.push_back(triangle.material_index);        // material index per triangle
 
     const auto material = scene_materials[triangle.material_index];
@@ -203,7 +222,7 @@ void RayTracingScene::build_scene(const VulkanDevice &device, const VulkanAlloca
   // You can also add VK_BUFFER_USAGE_VERTEX_BUFFER_BIT if the same buffer will later be reused for raster rendering/debug drawing. It would not hurt, but it is unnecessary for BLAS building alone.
   vertex_buffer_ = std::make_unique<VulkanBuffer>(allocator,
     BufferCreateInfo{
-      .size = static_cast<VkDeviceSize>(vertices.size() * sizeof(float)),
+      .size = static_cast<VkDeviceSize>(vertices.size() * sizeof(GpuVertex)),
       .usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |       // VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR means: The buffer may be read by vkCmdBuildAccelerationStructuresKHR while building the BLAS. In our case, those reads are the triangle positions.
                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,// VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT means: The buffer can be addressed through a raw GPU device address, which is exactly how the BLAS geometry points at it
@@ -211,7 +230,7 @@ void RayTracingScene::build_scene(const VulkanDevice &device, const VulkanAlloca
       .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,        // tells VMA "This allocation should be CPU-mappable, and I mostly plan to write it once/sequentially from the CPU."
     });
 
-  auto *vertex_data = static_cast<float *>(vertex_buffer_->map());
+  auto *vertex_data = static_cast<GpuVertex *>(vertex_buffer_->map());
   std::copy(vertices.begin(), vertices.end(), vertex_data);
   vertex_buffer_->flush();
   vertex_buffer_->unmap();
@@ -259,7 +278,7 @@ void RayTracingScene::build_scene(const VulkanDevice &device, const VulkanAlloca
   triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
   triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
   triangles.vertexData.deviceAddress = vertex_buffer_->device_address(device);
-  triangles.vertexStride = 3 * sizeof(float);
+  triangles.vertexStride = sizeof(GpuVertex);
   triangles.maxVertex = triangle_count_ * 3 - 1;
   triangles.indexType = VK_INDEX_TYPE_NONE_KHR;
 
@@ -455,4 +474,3 @@ instances pointing to it.
 https://docs.vulkan.org/tutorial/latest/courses/18_Ray_tracing/02_Acceleration_structures.html
 https://nvpro-samples.github.io/vk_raytracing_tutorial_KHR/
 */
-
