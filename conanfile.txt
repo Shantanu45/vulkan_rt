@@ -12,6 +12,7 @@ volk/1.4.350.0
 vulkan-headers/1.4.350.0
 vulkan-memory-allocator/3.3.0
 imgui/1.92.8
+tinygltf/2.9.7
 
 [generators]
 CMakeDeps

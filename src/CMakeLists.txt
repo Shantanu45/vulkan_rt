@@ -121,6 +121,8 @@ source_group("third_party/imgui/backends" FILES ${imgui_backends})
 set(scene
     scene/Camera.cpp
     scene/Camera.hpp
+    scene/gltf_loader.cpp
+    scene/gltf_loader.h
     scene/Scene.cpp
     scene/Scene.hpp
 )
@@ -200,6 +202,7 @@ find_package(volk REQUIRED)
 find_package(libassert REQUIRED)
 find_package(sdl3 REQUIRED)
 find_package(VulkanMemoryAllocator REQUIRED)
+find_package(TinyGLTF REQUIRED)
 
 target_link_libraries(
   ${PROJECT_NAME}
@@ -214,6 +217,7 @@ target_link_libraries(
           libassert::assert
           SDL3::SDL3
           GPUOpen::VulkanMemoryAllocator
+          TinyGLTF::TinyGLTF
           ${vulkan_rt_sdl_target})
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
