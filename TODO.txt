@@ -115,6 +115,8 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Add first clear/present VulkanRenderer path and an opt-in smoke command.
 - [x] Add resize-triggered swapchain recreation and an opt-in smoke command.
 - [x] Add VulkanAllocator + VulkanBuffer and an opt-in smoke command.
+- [x] Add full VulkanRenderer smoke test that renders the procedural scene and
+      verifies readback pixels.
 - [ ] Manually verify that the procedural scene renders through the ray tracing
       pipeline.
 - [ ] Manually verify that camera movement resets accumulation.

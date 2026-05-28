@@ -1,11 +1,16 @@
 #include "VulkanRenderer.hpp"
 
+#include "OneShotCommandBuffer.hpp"
+
+#include <array>
 #include <cstdint>
+#include <cstddef>
 #include <filesystem>
 #include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <internal_use_only/config.hpp>
 
@@ -228,6 +233,86 @@ VulkanRenderer::~VulkanRenderer()
 {
   device_.wait_idle();
   destroy_present_semaphores();
+}
+
+RendererReadbackSummary VulkanRenderer::read_output_image_summary()
+{
+  if(!ray_tracing_ || !ray_tracing_->output_image)
+  {
+    throw std::runtime_error("Cannot read renderer output before ray tracing resources are initialized.");
+  }
+
+  device_.wait_idle();
+
+  const auto extent = ray_tracing_->output_image->extent();
+  const VkDeviceSize readback_size = static_cast<VkDeviceSize>(extent.width) * extent.height * 4;
+  VulkanBuffer readback_buffer{
+    allocator_,
+    BufferCreateInfo{
+      .size = readback_size,
+      .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      .memory_usage = VMA_MEMORY_USAGE_AUTO,
+      .alloc_flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT,
+    }};
+
+  {
+    OneShotCommandBuffer command_buffer{device_};
+    command_buffer.begin();
+
+    VkBufferImageCopy copy_region{};
+    copy_region.bufferOffset = 0;
+    copy_region.bufferRowLength = 0;
+    copy_region.bufferImageHeight = 0;
+    copy_region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copy_region.imageSubresource.mipLevel = 0;
+    copy_region.imageSubresource.baseArrayLayer = 0;
+    copy_region.imageSubresource.layerCount = 1;
+    copy_region.imageOffset = VkOffset3D{.x = 0, .y = 0, .z = 0};
+    copy_region.imageExtent = VkExtent3D{.width = extent.width, .height = extent.height, .depth = 1};
+
+    vkCmdCopyImageToBuffer(command_buffer.command_buffer(),
+      ray_tracing_->output_image->image(),
+      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+      readback_buffer.buffer(),
+      1,
+      &copy_region);
+
+    command_buffer.end_submit_and_wait();
+  }
+
+  readback_buffer.invalidate();
+  const auto *pixels = static_cast<const std::uint8_t *>(readback_buffer.map());
+
+  RendererReadbackSummary summary{
+    .width = extent.width,
+    .height = extent.height,
+  };
+
+  const auto pixel_count = static_cast<std::uint64_t>(extent.width) * extent.height;
+  for(std::uint64_t pixel = 0; pixel < pixel_count; ++pixel)
+  {
+    const auto offset = static_cast<std::size_t>(pixel * 4);
+    const bool non_black = pixels[offset + 0] != 0 || pixels[offset + 1] != 0 || pixels[offset + 2] != 0;
+    if(non_black)
+    {
+      ++summary.non_black_pixel_count;
+    }
+    if(pixels[offset + 3] == 0)
+    {
+      ++summary.invalid_alpha_pixel_count;
+    }
+  }
+
+  const auto center_offset = static_cast<std::size_t>(((extent.height / 2) * extent.width + (extent.width / 2)) * 4);
+  summary.center_pixel = std::array<std::uint8_t, 4>{
+    pixels[center_offset + 0],
+    pixels[center_offset + 1],
+    pixels[center_offset + 2],
+    pixels[center_offset + 3],
+  };
+
+  readback_buffer.unmap();
+  return summary;
 }
 
 void VulkanRenderer::create_ray_tracing_resources(const scene::Scene &scene, const scene::Camera &camera)

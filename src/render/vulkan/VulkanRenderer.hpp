@@ -27,9 +27,19 @@
 
 #include <cstdint>
 #include <memory>
+#include <array>
 #include <vector>
 
 namespace vulkan_rt::render::vulkan {
+struct RendererReadbackSummary
+{
+  std::uint32_t width = 0;
+  std::uint32_t height = 0;
+  std::uint64_t non_black_pixel_count = 0;
+  std::uint64_t invalid_alpha_pixel_count = 0;
+  std::array<std::uint8_t, 4> center_pixel{};
+};
+
 class VulkanRenderer final : public Renderer
 {
 public:
@@ -43,6 +53,8 @@ public:
   void resize(int width, int height) override;
 
   void wait_idle() override;
+
+  [[nodiscard]] RendererReadbackSummary read_output_image_summary();
 
 private:
   struct RayTracingResources

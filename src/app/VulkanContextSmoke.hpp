@@ -19,4 +19,5 @@ int vulkan_tlas_smoke_test(const AppConfig &config);
 int vulkan_buffer_smoke_test(const AppConfig &config);
 int vulkan_clear_smoke_test(const AppConfig &config);
 int vulkan_resize_smoke_test(const AppConfig &config);
+int vulkan_renderer_smoke_test(const AppConfig &config);
 }

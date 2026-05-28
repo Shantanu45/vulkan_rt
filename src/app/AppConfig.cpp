@@ -70,6 +70,9 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_flag("--vulkan-resize-smoke",
     config.vulkan_resize_smoke,
     "Create VulkanRenderer, recreate the swapchain through resize(), and exit.");
+  cli.add_flag("--vulkan-renderer-smoke",
+    config.vulkan_renderer_smoke,
+    "Render the procedural scene through VulkanRenderer, read back the output image, and verify visible pixels.");
 
   try {
     cli.parse(argc, argv);

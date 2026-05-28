@@ -32,6 +32,11 @@ VulkanImGui::VulkanImGui(
   std::uint32_t frames_in_flight)
   : device_(device.device())
 {
+  if(ImGui::GetCurrentContext() == nullptr)
+  {
+    return;
+  }
+
   create_descriptor_pool();
   create_render_pass(swapchain.image_format());
   create_framebuffers(swapchain);
@@ -45,13 +50,18 @@ VulkanImGui::~VulkanImGui()
 
 void VulkanImGui::recreate_framebuffers(const VulkanSwapchain &swapchain)
 {
+  if(!backend_initialized_)
+  {
+    return;
+  }
+
   destroy_framebuffers();
   create_framebuffers(swapchain);
 }
 
 bool VulkanImGui::render(VkCommandBuffer command_buffer, std::uint32_t image_index, const VulkanSwapchain &swapchain)
 {
-  if(ImGui::GetCurrentContext() == nullptr)
+  if(!backend_initialized_ || ImGui::GetCurrentContext() == nullptr)
   {
     return false;
   }
@@ -167,6 +177,7 @@ void VulkanImGui::initialize_backend(
   init_info.MinImageCount = frames_in_flight;
   init_info.ImageCount = static_cast<std::uint32_t>(swapchain.images().size());
   ImGui_ImplVulkan_Init(&init_info);
+  backend_initialized_ = true;
 }
 
 void VulkanImGui::destroy_framebuffers()
@@ -185,7 +196,11 @@ void VulkanImGui::destroy()
     return;
   }
 
-  ImGui_ImplVulkan_Shutdown();
+  if(backend_initialized_)
+  {
+    ImGui_ImplVulkan_Shutdown();
+    backend_initialized_ = false;
+  }
   destroy_framebuffers();
   if(render_pass_ != VK_NULL_HANDLE)
   {

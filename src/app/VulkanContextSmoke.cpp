@@ -1435,4 +1435,79 @@ int vulkan_resize_smoke_test(const AppConfig &config)
   LOGI("Vulkan resize smoke passed: recreated swapchain through renderer.resize()");
   return 0;
 }
+
+int vulkan_renderer_smoke_test(const AppConfig &config)
+{
+  SdlRuntime sdl_runtime;
+  Window window{
+    fmt::format("{} Vulkan renderer smoke", vulkan_rt::cmake::project_name),
+    config.width,
+    config.height,
+  };
+
+  SdlSurfaceProvider surface_provider{window.native_handle()};
+  const std::string application_name{vulkan_rt::cmake::project_name};
+  render::vulkan::VulkanRendererConfig vulkan_config{
+    .validation = config.validation,
+    .application_name = application_name.c_str(),
+    .gpu_index = config.gpu_index,
+  };
+
+  render::vulkan::VulkanRenderer renderer{
+    vulkan_config,
+    surface_provider,
+    render::vulkan::SwapchainExtent{
+      .width = static_cast<std::uint32_t>(config.width),
+      .height = static_cast<std::uint32_t>(config.height),
+    },
+  };
+
+  const auto procedural_scene = scene::make_procedural_scene();
+  const scene::Camera camera;
+
+  constexpr std::uint64_t frame_count = 8;
+  for(std::uint64_t frame = 0; frame < frame_count; ++frame)
+  {
+    renderer.render(
+      render::RenderFrameInfo{
+        .frame_index = frame,
+        .reset_accumulation = frame == 0,
+      },
+      procedural_scene,
+      camera);
+    SDL_Delay(16);
+  }
+
+  renderer.wait_idle();
+  const auto summary = renderer.read_output_image_summary();
+
+  LOGI("Vulkan renderer smoke output:");
+  LOGI("  extent: {}x{}", summary.width, summary.height);
+  LOGI("  non-black pixels: {}", summary.non_black_pixel_count);
+  LOGI("  invalid alpha pixels: {}", summary.invalid_alpha_pixel_count);
+  LOGI("  center pixel RGBA: {}, {}, {}, {}",
+    summary.center_pixel[0],
+    summary.center_pixel[1],
+    summary.center_pixel[2],
+    summary.center_pixel[3]);
+
+  if(summary.width == 0 || summary.height == 0)
+  {
+    LOGE("Vulkan renderer smoke failed: output extent is empty.");
+    return 1;
+  }
+  if(summary.non_black_pixel_count == 0)
+  {
+    LOGE("Vulkan renderer smoke failed: output image is entirely black.");
+    return 1;
+  }
+  if(summary.invalid_alpha_pixel_count > 0)
+  {
+    LOGE("Vulkan renderer smoke failed: output image contains zero-alpha pixels.");
+    return 1;
+  }
+
+  LOGI("Vulkan renderer smoke passed: rendered and read back {} frames", frame_count);
+  return 0;
+}
 }

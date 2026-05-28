@@ -45,5 +45,6 @@ private:
   VkDescriptorPool descriptor_pool_ = VK_NULL_HANDLE;
   VkRenderPass render_pass_ = VK_NULL_HANDLE;
   std::vector<VkFramebuffer> framebuffers_;
+  bool backend_initialized_ = false;
 };
 }
