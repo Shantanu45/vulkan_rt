@@ -9,13 +9,6 @@
 #include <utility>
 
 namespace vulkan_rt::engine {
-namespace
-{
-constexpr float camera_move_speed = 3.0F;
-constexpr float camera_fast_move_speed = 10.0F;
-constexpr float mouse_degrees_per_pixel = 0.1F;
-}
-
 Engine::Engine(EngineConfig config)
   : config_(std::move(config)), scene_(scene::make_procedural_scene()),
     renderer_(std::make_unique<render::NullRenderer>())
@@ -43,7 +36,7 @@ bool Engine::update_camera(const CameraControlInput &input, double delta_seconds
   const float movement_length = std::sqrt(forward * forward + right * right + up * up);
   if(movement_length > 0.0F)
   {
-    const float speed = input.fast_move ? camera_fast_move_speed : camera_move_speed;
+    const float speed = input.fast_move ? camera_settings_.fast_move_speed : camera_settings_.move_speed;
     const float distance = speed * static_cast<float>(delta_seconds) / movement_length;
     camera_.move_local(forward * distance, right * distance, up * distance);
     changed = true;
@@ -52,8 +45,8 @@ bool Engine::update_camera(const CameraControlInput &input, double delta_seconds
   if(input.rotate && (input.mouse_delta_x != 0.0F || input.mouse_delta_y != 0.0F))
   {
     camera_.set_orientation(
-      camera_.yaw_degrees() + input.mouse_delta_x * mouse_degrees_per_pixel,
-      camera_.pitch_degrees() - input.mouse_delta_y * mouse_degrees_per_pixel);
+      camera_.yaw_degrees() + input.mouse_delta_x * camera_settings_.mouse_degrees_per_pixel,
+      camera_.pitch_degrees() - input.mouse_delta_y * camera_settings_.mouse_degrees_per_pixel);
     changed = true;
   }
 
@@ -67,16 +60,18 @@ bool Engine::update_camera(const CameraControlInput &input, double delta_seconds
 
 void Engine::render()
 {
+  const bool reset_accumulation = reset_accumulation_requested_;
   renderer_->render(
     render::RenderFrameInfo{
       .frame_index = frame_stats_.frame_index,
       .frame_time_ms = frame_stats_.frame_time_ms,
       .fps = frame_stats_.fps,
-      .reset_accumulation = reset_accumulation_requested_,
+      .reset_accumulation = reset_accumulation,
       .settings = renderer_settings_,
     },
     scene_,
     camera_);
+  frame_stats_.accumulated_sample_count = reset_accumulation ? 1 : frame_stats_.accumulated_sample_count + 1;
   reset_accumulation_requested_ = false;
   ++frame_stats_.frame_index;
 }
@@ -103,6 +98,19 @@ void Engine::set_renderer_settings(const render::RendererSettings &settings)
   renderer_settings_ = settings;
 }
 
+void Engine::set_camera_settings(const CameraSettings &settings)
+{
+  const float previous_fov = camera_.vertical_fov_degrees();
+  camera_settings_ = settings;
+  camera_.set_vertical_fov_degrees(camera_settings_.vertical_fov_degrees);
+  camera_settings_.vertical_fov_degrees = camera_.vertical_fov_degrees();
+
+  if(camera_.vertical_fov_degrees() != previous_fov)
+  {
+    reset_accumulation_requested_ = true;
+  }
+}
+
 void Engine::request_accumulation_reset()
 {
   reset_accumulation_requested_ = true;
@@ -124,4 +132,6 @@ const scene::Scene &Engine::scene() const { return scene_; }
 const scene::Camera &Engine::camera() const { return camera_; }
 
 const render::RendererSettings &Engine::renderer_settings() const { return renderer_settings_; }
+
+const CameraSettings &Engine::camera_settings() const { return camera_settings_; }
 }// namespace vulkan_rt::engine

@@ -8,5 +8,6 @@ struct FrameStats
   double frame_time_ms = 0.0;
   double fps = 0.0;
   uint64_t frame_index = 0;
+  uint64_t accumulated_sample_count = 0;
 };
 }// namespace vulkan_rt::engine

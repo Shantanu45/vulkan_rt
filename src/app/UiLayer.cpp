@@ -11,6 +11,7 @@ UiStats make_ui_stats(const engine::FrameStats &frame_stats, Extent framebuffer_
   stats.frame_time_ms = frame_stats.frame_time_ms;
   stats.fps = frame_stats.fps;
   stats.frame_index = frame_stats.frame_index;
+  stats.accumulated_sample_count = frame_stats.accumulated_sample_count;
   stats.framebuffer_extent = framebuffer_extent;
   return stats;
 }
@@ -60,7 +61,8 @@ void UiLayer::begin_frame()
   ImGui::NewFrame();
 }
 
-UiActions UiLayer::draw(const UiStats &stats, render::RendererSettings &settings)
+UiActions UiLayer::draw(
+  const UiStats &stats, render::RendererSettings &renderer_settings, engine::CameraSettings &camera_settings)
 {
   last_stats_ = stats;
   UiActions actions;
@@ -76,29 +78,52 @@ UiActions UiLayer::draw(const UiStats &stats, render::RendererSettings &settings
     ImGui::Text("FPS %.1f", stats.fps);
     ImGui::Text("Frame %.0f ms", stats.frame_time_ms);
     ImGui::Text("Frame index %llu", static_cast<unsigned long long>(stats.frame_index));
+    ImGui::Text("Samples %llu", static_cast<unsigned long long>(stats.accumulated_sample_count));
     ImGui::Text("Extent %dx%d", stats.framebuffer_extent.width, stats.framebuffer_extent.height);
     ImGui::Separator();
 
-    int max_bounces = static_cast<int>(settings.max_bounces);
+    int max_bounces = static_cast<int>(renderer_settings.max_bounces);
     if(ImGui::SliderInt("Max bounces", &max_bounces, 1, 8))
     {
-      settings.max_bounces = static_cast<std::uint32_t>(max_bounces);
+      renderer_settings.max_bounces = static_cast<std::uint32_t>(max_bounces);
       actions.renderer_settings_changed = true;
     }
 
-    if(ImGui::Checkbox("Direct lighting", &settings.direct_lighting_enabled))
+    if(ImGui::Checkbox("Direct lighting", &renderer_settings.direct_lighting_enabled))
     {
       actions.renderer_settings_changed = true;
     }
 
-    if(ImGui::Checkbox("Jitter", &settings.jitter_enabled))
+    if(ImGui::Checkbox("Jitter", &renderer_settings.jitter_enabled))
     {
       actions.renderer_settings_changed = true;
     }
 
-    if(ImGui::SliderFloat("Exposure", &settings.exposure, 0.05F, 5.0F, "%.2f"))
+    if(ImGui::SliderFloat("Exposure", &renderer_settings.exposure, 0.05F, 5.0F, "%.2f"))
     {
       actions.renderer_settings_changed = true;
+    }
+
+    ImGui::Separator();
+
+    if(ImGui::SliderFloat("Move speed", &camera_settings.move_speed, 0.1F, 20.0F, "%.1f"))
+    {
+      actions.camera_settings_changed = true;
+    }
+
+    if(ImGui::SliderFloat("Fast speed", &camera_settings.fast_move_speed, 1.0F, 50.0F, "%.1f"))
+    {
+      actions.camera_settings_changed = true;
+    }
+
+    if(ImGui::SliderFloat("Mouse sensitivity", &camera_settings.mouse_degrees_per_pixel, 0.01F, 1.0F, "%.2f"))
+    {
+      actions.camera_settings_changed = true;
+    }
+
+    if(ImGui::SliderFloat("FOV", &camera_settings.vertical_fov_degrees, 20.0F, 120.0F, "%.0f"))
+    {
+      actions.camera_settings_changed = true;
     }
 
     if(ImGui::Button("Reset accumulation"))

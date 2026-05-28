@@ -23,6 +23,14 @@ struct CameraControlInput
   float mouse_delta_y = 0.0F;
 };
 
+struct CameraSettings
+{
+  float move_speed = 3.0F;
+  float fast_move_speed = 10.0F;
+  float mouse_degrees_per_pixel = 0.1F;
+  float vertical_fov_degrees = 45.0F;
+};
+
 class Engine
 {
 public:
@@ -35,6 +43,7 @@ public:
   void resize(int width, int height);
   void set_renderer(std::unique_ptr<render::Renderer> renderer);
   void set_renderer_settings(const render::RendererSettings &settings);
+  void set_camera_settings(const CameraSettings &settings);
   void request_accumulation_reset();
 
   [[nodiscard]] const FrameStats &frame_stats() const;
@@ -42,6 +51,7 @@ public:
   [[nodiscard]] const scene::Scene &scene() const;
   [[nodiscard]] const scene::Camera &camera() const;
   [[nodiscard]] const render::RendererSettings &renderer_settings() const;
+  [[nodiscard]] const CameraSettings &camera_settings() const;
 
 private:
   EngineConfig config_;
@@ -50,6 +60,7 @@ private:
   scene::Camera camera_;
   std::unique_ptr<render::Renderer> renderer_;
   render::RendererSettings renderer_settings_;
+  CameraSettings camera_settings_;
   bool reset_accumulation_requested_ = true;
 };
 }// namespace vulkan_rt::engine

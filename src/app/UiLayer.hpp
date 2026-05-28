@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app/Window.hpp"
+#include "engine/Engine.hpp"
 #include "engine/FrameStats.hpp"
 #include "render/Renderer.hpp"
 
@@ -14,12 +15,14 @@ struct UiStats
   double frame_time_ms = 0.0;
   double fps = 0.0;
   uint64_t frame_index = 0;
+  uint64_t accumulated_sample_count = 0;
   Extent framebuffer_extent = {};
 };
 
 struct UiActions
 {
   bool renderer_settings_changed = false;
+  bool camera_settings_changed = false;
   bool reset_accumulation_requested = false;
 };
 
@@ -39,7 +42,8 @@ public:
   void initialize(SDL_Window *window);
   void handle_event(const SDL_Event &event);
   void begin_frame();
-  UiActions draw(const UiStats &stats, render::RendererSettings &settings);
+  UiActions draw(
+    const UiStats &stats, render::RendererSettings &renderer_settings, engine::CameraSettings &camera_settings);
   void end_frame();
 
   [[nodiscard]] const UiStats &last_stats() const;

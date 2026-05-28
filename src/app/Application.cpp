@@ -116,12 +116,17 @@ void Application::tick_once(double delta_seconds)
   }
 
   auto renderer_settings = engine_.renderer_settings();
+  auto camera_settings = engine_.camera_settings();
   ui_.begin_frame();
-  const auto ui_actions = ui_.draw(make_ui_stats(engine_.frame_stats(), extent), renderer_settings);
+  const auto ui_actions = ui_.draw(make_ui_stats(engine_.frame_stats(), extent), renderer_settings, camera_settings);
   ui_.end_frame();
   if(ui_actions.renderer_settings_changed)
   {
     engine_.set_renderer_settings(renderer_settings);
+  }
+  if(ui_actions.camera_settings_changed)
+  {
+    engine_.set_camera_settings(camera_settings);
   }
   if(ui_actions.reset_accumulation_requested)
   {

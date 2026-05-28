@@ -64,11 +64,13 @@ TEST_CASE("engine render increments frame index")
   vulkan_rt::engine::Engine engine{{}};
 
   CHECK(engine.frame_stats().frame_index == 0);
+  CHECK(engine.frame_stats().accumulated_sample_count == 0);
 
   engine.render();
   engine.render();
 
   CHECK(engine.frame_stats().frame_index == 2);
+  CHECK(engine.frame_stats().accumulated_sample_count == 2);
 }
 
 TEST_CASE("engine owns the configured procedural scene")
@@ -105,6 +107,25 @@ TEST_CASE("engine moves camera from camera control input")
   CHECK(after.z != Catch::Approx(before.z));
 }
 
+TEST_CASE("engine uses configured camera movement speed")
+{
+  vulkan_rt::engine::Engine engine{{}};
+  vulkan_rt::engine::CameraSettings settings = engine.camera_settings();
+  settings.move_speed = 6.0F;
+  engine.set_camera_settings(settings);
+
+  const auto before = engine.camera().position();
+  const bool changed = engine.update_camera(
+    vulkan_rt::engine::CameraControlInput{
+      .move_forward = true,
+    },
+    0.5);
+
+  const auto after = engine.camera().position();
+  CHECK(changed);
+  CHECK(before.z - after.z == Catch::Approx(3.0F));
+}
+
 TEST_CASE("engine rotates camera from mouse delta when rotation is active")
 {
   vulkan_rt::engine::Engine engine{{}};
@@ -120,6 +141,18 @@ TEST_CASE("engine rotates camera from mouse delta when rotation is active")
   CHECK(changed);
   CHECK(engine.camera().yaw_degrees() == Catch::Approx(-88.0F));
   CHECK(engine.camera().pitch_degrees() == Catch::Approx(1.0F));
+}
+
+TEST_CASE("engine applies camera fov settings")
+{
+  vulkan_rt::engine::Engine engine{{}};
+  vulkan_rt::engine::CameraSettings settings = engine.camera_settings();
+  settings.vertical_fov_degrees = 70.0F;
+
+  engine.set_camera_settings(settings);
+
+  CHECK(engine.camera().vertical_fov_degrees() == Catch::Approx(70.0F));
+  CHECK(engine.camera_settings().vertical_fov_degrees == Catch::Approx(70.0F));
 }
 
 TEST_CASE("engine requests accumulation reset for startup and camera changes")
@@ -145,4 +178,25 @@ TEST_CASE("engine requests accumulation reset for startup and camera changes")
 
   REQUIRE(spy->reset_accumulation_frames.size() == 3);
   CHECK(spy->reset_accumulation_frames[2]);
+}
+
+TEST_CASE("engine requests accumulation reset for fov changes")
+{
+  vulkan_rt::engine::Engine engine{{}};
+  auto renderer = std::make_unique<SpyRenderer>();
+  auto *spy = renderer.get();
+  engine.set_renderer(std::move(renderer));
+
+  engine.render();
+  engine.render();
+
+  vulkan_rt::engine::CameraSettings settings = engine.camera_settings();
+  settings.vertical_fov_degrees = 80.0F;
+  engine.set_camera_settings(settings);
+  engine.render();
+
+  REQUIRE(spy->reset_accumulation_frames.size() == 3);
+  CHECK_FALSE(spy->reset_accumulation_frames[1]);
+  CHECK(spy->reset_accumulation_frames[2]);
+  CHECK(engine.frame_stats().accumulated_sample_count == 1);
 }

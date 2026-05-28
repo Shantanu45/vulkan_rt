@@ -12,15 +12,15 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Replace the template executable with an initial application shell.
 - [x] Add an app layer for SDL3 window creation, main loop, input, UI-layer
       boundary, and CLI options.
-- [ ] Add the real ImGui overlay once the Vulkan renderer/backend exists.
+- [x] Add the real ImGui overlay once the Vulkan renderer/backend exists.
 - [x] Add an initial engine layer for frame lifecycle and future renderer/scene
       ownership.
-- [ ] Add a render/vulkan layer for Vulkan instance/device/swapchain, command
+- [x] Add a render/vulkan layer for Vulkan instance/device/swapchain, command
       pools, synchronization, descriptors, pipelines, acceleration structures,
       and shader binding table.
 - [x] Use the Vulkan C API with thin local RAII wrappers.
 - [x] Implement non-copyable handle wrappers with explicit move semantics.
-- [ ] Add central Vulkan types: Device, Context, Swapchain, Buffer, Image,
+- [x] Add central Vulkan types: Device, Context, Swapchain, Buffer, Image,
       and AccelerationStructure.
 - [x] Add ShaderModule Vulkan type.
 - [x] Add RayTracingPipeline Vulkan type.
@@ -40,7 +40,7 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Add Vulkan surface integration when renderer setup begins.
 - [x] Add Vulkan SDK detection with find_package(Vulkan REQUIRED).
 - [x] Add VulkanMemoryAllocator for GPU memory management.
-- [ ] Add ImGui with SDL3 and Vulkan backends for the minimal overlay.
+- [x] Add ImGui with SDL3 and Vulkan backends for the minimal overlay.
 - [x] Keep fmt, spdlog, CLI11, and Catch2.
 - [x] Add GLSL ray tracing shaders:
       - shaders/raygen.rgen
@@ -49,13 +49,13 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Add a CMake custom target that compiles GLSL shaders to SPIR-V with glslc.
 - [x] Emit a clear configure-time error if Vulkan SDK or glslc is missing.
 - [x] Add a procedural Cornell-box-style test scene with triangle mesh geometry.
-- [ ] Add a simple material buffer with diffuse albedo, emissive color, and a
+- [x] Add a simple material buffer with diffuse albedo, emissive color, and a
       roughness placeholder.
-- [ ] Implement progressive accumulation.
-- [ ] Reset accumulation when the camera moves or scene/debug settings change.
-- [ ] Add a minimal ImGui overlay showing FPS/frame time.
-- [ ] Show accumulated sample count in the overlay.
-- [ ] Add camera speed and FOV controls.
+- [x] Implement progressive accumulation.
+- [x] Reset accumulation when the camera moves or scene/debug settings change.
+- [x] Add a minimal ImGui overlay showing FPS/frame time.
+- [x] Show accumulated sample count in the overlay.
+- [x] Add camera speed and FOV controls.
 - [ ] Add validation/debug toggles where available.
 - [ ] Add a reset accumulation button.
 
@@ -78,7 +78,7 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Add Scene for CPU-side geometry, material, and light data for V1
       procedural content.
 - [x] Add Camera with position, orientation, FOV, and viewport aspect.
-- [ ] Add input-driven camera update.
+- [x] Add input-driven camera update.
 - [ ] Report fatal setup failures with clear messages.
 - [x] Detect and report missing ray tracing extension support.
 - [x] Detect and report missing acceleration structure support.
@@ -89,7 +89,7 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 
 - [ ] Keep Catch2 tests.
 - [ ] Replace template sample tests with engine-focused tests.
-- [ ] Test CLI config parsing defaults and overrides.
+- [x] Test CLI config parsing defaults and overrides.
 - [ ] Test RAII wrapper move/destruction behavior with mock or null-safe handles
       where practical.
 - [x] Test that the procedural scene builder produces valid geometry and
@@ -97,8 +97,8 @@ compiled with glslc, a procedural test scene, and a minimal ImGui overlay.
 - [x] Test camera defaults, viewport aspect updates, movement, and direction
       vector normalization.
 - [ ] Test that shader manifest/custom command paths are generated as expected.
-- [ ] Add CTest smoke test for vulkan_rt --help.
-- [ ] Add CTest smoke test for vulkan_rt --version.
+- [x] Add CTest smoke test for vulkan_rt --help.
+- [x] Add CTest smoke test for vulkan_rt --version.
 - [x] Add an optional CI-safe --dry-run-config path that validates config without
       creating a Vulkan device.
 - [x] Add an app smoke path that creates the SDL application shell, ticks once,
