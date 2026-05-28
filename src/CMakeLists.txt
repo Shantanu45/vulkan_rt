@@ -203,6 +203,7 @@ find_package(libassert REQUIRED)
 find_package(sdl3 REQUIRED)
 find_package(VulkanMemoryAllocator REQUIRED)
 find_package(TinyGLTF CONFIG REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 target_link_libraries(
   ${PROJECT_NAME}
@@ -218,6 +219,7 @@ target_link_libraries(
           SDL3::SDL3
           GPUOpen::VulkanMemoryAllocator
           TinyGLTF::TinyGLTF
+          nlohmann_json::nlohmann_json
           ${vulkan_rt_sdl_target})
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
