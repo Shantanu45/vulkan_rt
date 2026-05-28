@@ -92,6 +92,7 @@ VulkanRenderer::VulkanRenderer(
   , imgui_(context_, device_, swapchain_, frames_.frames_in_flight())
 {
   swapchain_image_layouts_.assign(swapchain_.images().size(), VK_IMAGE_LAYOUT_UNDEFINED);
+  create_present_semaphores();
 }
 
 void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scene &scene, const scene::Camera &camera)
@@ -121,7 +122,6 @@ void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scen
   const auto frame_index = frames_.current_frame_index();
   const auto command_buffer = frames_.command_buffers()[frame_index];
   const auto image_available = frames_.image_available_semaphores()[frame_index];
-  const auto render_finished = frames_.render_finished_semaphores()[frame_index];
   const auto in_flight_fence = frames_.in_flight_fences()[frame_index];
 
   throw_if_failed(
@@ -148,6 +148,8 @@ void VulkanRenderer::render(const RenderFrameInfo &frame_info, const scene::Scen
   {
     swapchain_recreate_requested_ = true;
   }
+
+  const auto render_finished = present_finished_semaphores_[image_index];
 
   throw_if_failed(vkResetFences(device_.device(), 1, &in_flight_fence), "vkResetFences");
   throw_if_failed(vkResetCommandBuffer(command_buffer, 0), "vkResetCommandBuffer");
@@ -222,7 +224,11 @@ void VulkanRenderer::wait_idle()
   device_.wait_idle();
 }
 
-VulkanRenderer::~VulkanRenderer() {}
+VulkanRenderer::~VulkanRenderer()
+{
+  device_.wait_idle();
+  destroy_present_semaphores();
+}
 
 void VulkanRenderer::create_ray_tracing_resources(const scene::Scene &scene, const scene::Camera &camera)
 {
@@ -285,12 +291,39 @@ void VulkanRenderer::recreate_swapchain(SwapchainExtent extent, const scene::Sce
 {
   device_.wait_idle();
   destroy_ray_tracing_resources();
+  destroy_present_semaphores();
 
   // Later: pass the old swapchain handle into recreation instead of blunt replacement.
   swapchain_.recreate(context_, device_, extent);
   swapchain_image_layouts_.assign(swapchain_.images().size(), VK_IMAGE_LAYOUT_UNDEFINED);
+  create_present_semaphores();
   imgui_.recreate_framebuffers(swapchain_);
   create_ray_tracing_resources(scene, camera);
+}
+
+void VulkanRenderer::create_present_semaphores()
+{
+  present_finished_semaphores_.resize(swapchain_.images().size(), VK_NULL_HANDLE);
+
+  VkSemaphoreCreateInfo semaphore_info{};
+  semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+  for(auto &semaphore : present_finished_semaphores_)
+  {
+    throw_if_failed(vkCreateSemaphore(device_.device(), &semaphore_info, nullptr, &semaphore), "vkCreateSemaphore");
+  }
+}
+
+void VulkanRenderer::destroy_present_semaphores()
+{
+  for(const auto semaphore : present_finished_semaphores_)
+  {
+    if(semaphore != VK_NULL_HANDLE)
+    {
+      vkDestroySemaphore(device_.device(), semaphore, nullptr);
+    }
+  }
+  present_finished_semaphores_.clear();
 }
 
 void VulkanRenderer::trace_to_output_image(VkCommandBuffer command_buffer)

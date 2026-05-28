@@ -80,14 +80,18 @@ bool VulkanImGui::render(VkCommandBuffer command_buffer, std::uint32_t image_ind
 
 void VulkanImGui::create_descriptor_pool()
 {
-  std::array<VkDescriptorPoolSize, 1> pool_sizes{};
-  pool_sizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  std::array<VkDescriptorPoolSize, 3> pool_sizes{};
+  pool_sizes[0].type = VK_DESCRIPTOR_TYPE_SAMPLER;
   pool_sizes[0].descriptorCount = 64;
+  pool_sizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+  pool_sizes[1].descriptorCount = 64;
+  pool_sizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  pool_sizes[2].descriptorCount = 64;
 
   VkDescriptorPoolCreateInfo pool_info{};
   pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
   pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-  pool_info.maxSets = 64;
+  pool_info.maxSets = 192;
   pool_info.poolSizeCount = static_cast<std::uint32_t>(pool_sizes.size());
   pool_info.pPoolSizes = pool_sizes.data();
   throw_if_failed(vkCreateDescriptorPool(device_, &pool_info, nullptr, &descriptor_pool_), "vkCreateDescriptorPool");
