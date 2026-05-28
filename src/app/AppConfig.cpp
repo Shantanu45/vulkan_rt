@@ -20,6 +20,7 @@ AppConfig parse_app_config(int argc, char **argv)
   cli.add_flag("--validation", config.validation, "Enable Vulkan validation when the renderer is available");
   cli.add_option("--gpu", config.gpu_index, "Requested GPU index; -1 selects the default device");
   cli.add_option("--scene", config.scene, "Scene source to load")->check(CLI::IsMember({ "procedural" }));
+  cli.add_option("--scene-file", config.scene_file, "JSON scene description file to load");
   cli.add_flag("--dry-run-config", config.dry_run_config, "Validate CLI configuration without opening a window");
   cli.add_flag("--app-smoke", config.app_smoke, "Create the SDL application shell, tick once, and exit");
   cli.add_flag("--check-vulkan",

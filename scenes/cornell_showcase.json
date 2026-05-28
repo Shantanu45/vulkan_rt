@@ -1,0 +1,8 @@
+{
+  "name": "Cornell Showcase",
+  "objects": [
+    {
+      "type": "procedural_cornell_box"
+    }
+  ]
+}

@@ -75,6 +75,7 @@ add_executable(tests
     engine_tests.cpp
     ray_tracing_camera_tests.cpp
     render_tests.cpp
+    scene_description_tests.cpp
     scene_tests.cpp
     test_main.cpp
 )
@@ -85,14 +86,18 @@ target_link_libraries(
           vulkan_rt::vulkan_rt_options
           Catch2::Catch2WithMain
           fmt::fmt
-          spdlog::spdlog)
+          spdlog::spdlog
+          TinyGLTF::TinyGLTF
+          nlohmann_json::nlohmann_json)
 
 target_sources(tests PRIVATE
     "${CMAKE_SOURCE_DIR}/src/engine/Engine.cpp"
     "${CMAKE_SOURCE_DIR}/src/engine/EngineConfig.cpp"
     "${CMAKE_SOURCE_DIR}/src/render/NullRenderer.cpp"
     "${CMAKE_SOURCE_DIR}/src/scene/Camera.cpp"
+    "${CMAKE_SOURCE_DIR}/src/scene/gltf_loader.cpp"
     "${CMAKE_SOURCE_DIR}/src/scene/Scene.cpp"
+    "${CMAKE_SOURCE_DIR}/src/scene/SceneDescription.cpp"
     "${CMAKE_SOURCE_DIR}/src/util/logger.cpp"
 )
 

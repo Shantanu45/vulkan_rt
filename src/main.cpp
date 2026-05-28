@@ -6,6 +6,7 @@
 #include "util/logger.h"
 #include <fmt/format.h>
 #include <internal_use_only/config.hpp>
+#include <exception>
 #include <memory>
 #include <utility>
 
@@ -13,22 +14,25 @@ int main(int argc, char **argv)
 {
   auto logger = std::make_unique<::Util::StdSpdLogger>();
   ::Util::set_logger_iface(logger.get());
-  auto config = vulkan_rt::app::parse_app_config(argc, argv);
-  ::Util::set_debug_logging_enabled(config.verbose);
 
-  LOGD("Git SHA: {}", vulkan_rt::cmake::git_sha);
-  if (config.dry_run_config) {
-    LOGI("{} {} config: {}x{}, validation={}, gpu={}, scene={}, app_smoke={}",
-      vulkan_rt::cmake::project_name,
-      vulkan_rt::cmake::project_version,
-      config.width,
-      config.height,
-      config.validation,
-      config.gpu_index,
-      config.scene,
-      config.app_smoke);
-    return 0;
-  }
+  try
+  {
+    auto config = vulkan_rt::app::parse_app_config(argc, argv);
+    ::Util::set_debug_logging_enabled(config.verbose);
+
+    LOGD("Git SHA: {}", vulkan_rt::cmake::git_sha);
+    if (config.dry_run_config) {
+      LOGI("{} {} config: {}x{}, validation={}, gpu={}, scene={}, app_smoke={}",
+        vulkan_rt::cmake::project_name,
+        vulkan_rt::cmake::project_version,
+        config.width,
+        config.height,
+        config.validation,
+        config.gpu_index,
+        config.scene,
+        config.app_smoke);
+      return 0;
+    }
 
   if (config.check_vulkan) {
     auto result = vulkan_rt::render::vulkan::check_vulkan(config.validation);
@@ -108,8 +112,14 @@ int main(int argc, char **argv)
     return vulkan_rt::app::vulkan_renderer_smoke_test(config);
   }
 
-  const bool app_smoke = config.app_smoke;
-  vulkan_rt::app::Application application{ std::move(config) };
-  if (app_smoke) { return application.smoke_test(); }
-  return application.run();
+    const bool app_smoke = config.app_smoke;
+    vulkan_rt::app::Application application{ std::move(config) };
+    if (app_smoke) { return application.smoke_test(); }
+    return application.run();
+  }
+  catch(const std::exception &exception)
+  {
+    LOGE("Fatal error: {}", exception.what());
+    return 1;
+  }
 }

@@ -1,19 +1,65 @@
 #include "engine/Engine.hpp"
 
 #include "render/NullRenderer.hpp"
+#include "scene/SceneDescription.hpp"
 #include "util/logger.h"
 
 #include <cmath>
+#include <filesystem>
+#include <internal_use_only/config.hpp>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace vulkan_rt::engine {
+namespace
+{
+scene::Scene load_engine_scene(const EngineConfig &config)
+{
+  if(config.scene_file.empty())
+  {
+    return scene::make_procedural_scene();
+  }
+
+  scene::SceneDescription description;
+  std::string error_message;
+  std::filesystem::path scene_file_path{config.scene_file};
+  if(!scene_file_path.is_absolute() && !std::filesystem::exists(scene_file_path))
+  {
+    const auto source_relative_path = std::filesystem::path{vulkan_rt::cmake::source_dir} / scene_file_path;
+    if(std::filesystem::exists(source_relative_path))
+    {
+      scene_file_path = source_relative_path;
+    }
+  }
+
+  const auto resolved_scene_file = scene_file_path.string();
+  if(!scene::load_scene_description(resolved_scene_file, description, error_message))
+  {
+    throw std::runtime_error("Failed to load scene file '" + resolved_scene_file + "': " + error_message);
+  }
+
+  auto loaded_scene = scene::make_scene_from_description(description, error_message);
+  if(loaded_scene.empty())
+  {
+    throw std::runtime_error("Scene file '" + resolved_scene_file + "' produced no renderable scene: " + error_message);
+  }
+
+  LOGI("Loaded scene file '{}': {}", resolved_scene_file, description.name);
+  return loaded_scene;
+}
+}
+
 Engine::Engine(EngineConfig config)
-  : config_(std::move(config)), scene_(scene::make_procedural_scene()),
+  : config_(std::move(config)), scene_(load_engine_scene(config_)),
     renderer_(std::make_unique<render::NullRenderer>())
 {
-  LOGD("Engine initialized: validation={}, gpu={}, scene={}", config_.validation, config_.gpu_index, config_.scene);
+  LOGD("Engine initialized: validation={}, gpu={}, scene={}, scene_file={}",
+    config_.validation,
+    config_.gpu_index,
+    config_.scene,
+    config_.scene_file);
   LOGD("Scene initialized: materials={}, triangles={}", scene_.materials().size(), scene_.triangles().size());
 }
 

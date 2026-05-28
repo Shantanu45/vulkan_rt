@@ -10,6 +10,7 @@ struct AppConfig
   bool validation = false;
   int gpu_index = -1;
   std::string scene = "procedural";
+  std::string scene_file;
   bool verbose = false;
   bool dry_run_config = false;
   bool app_smoke = false;
